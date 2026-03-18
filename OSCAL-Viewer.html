@@ -1,0 +1,2593 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OSCAL Viewer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ci-color-brand-dark: #001141;
+  --ci-color-brand-blue: #0055ff;
+  --ci-color-brand-blue-hover: #0044cc;
+  --ci-bg-page: #f4f6f9;
+  --ci-bg-card-light: #eaecef;
+  --ci-bg-card-white: #ffffff;
+  --ci-text-dark: #1a1a1a;
+  --ci-text-light: #ffffff;
+  --ci-text-muted: #5a6478;
+  --ci-border: #d1d5db;
+  --ci-success: #10b981;
+  --ci-warn: #f59e0b;
+  --ci-danger: #ef4444;
+  --ci-radius-card: 16px;
+  --ci-radius-button: 99px;
+  --ci-radius-input: 8px;
+  --ci-radius-small: 6px;
+  --ci-font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'DM Sans', var(--ci-font-family);
+  --font-mono: 'IBM Plex Mono', 'SF Mono', Monaco, monospace;
+  --spacing-xs: 8px;
+  --spacing-sm: 12px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --sp-xs: 4px;
+  --ci-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  --ci-shadow-lg: 0 8px 24px rgba(0,0,0,0.1);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--ci-font-family); background: var(--ci-bg-page); color: var(--ci-text-dark); font-size: 13px; line-height: 1.5; overflow: hidden; height: 100vh; }
+input, select, textarea, button { font-family: inherit; font-size: inherit; }
+input[type='text'], input[type='url'], select, textarea {
+  width: 100%; padding: 8px 12px; border: 1px solid transparent;
+  border-radius: var(--ci-radius-input); background: var(--ci-bg-card-light);
+  color: var(--ci-text-dark); transition: border-color 0.15s, background 0.15s;
+}
+input:focus, select:focus, textarea:focus {
+  outline: none; background: var(--ci-bg-card-white);
+  border-color: var(--ci-color-brand-blue); box-shadow: 0 0 0 3px rgba(0,85,255,0.1);
+}
+a { color: var(--ci-color-brand-blue); text-decoration: none; }
+a:hover { text-decoration: underline; }
+mark { background: #fef9c3; color: inherit; border-radius: 2px; padding: 0 1px; }
+
+/* BUTTONS */
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border: none; border-radius: var(--ci-radius-button); font-weight: 600; cursor: pointer; transition: all 0.15s; font-size: 12px; white-space: nowrap; }
+.btn-primary { background: var(--ci-color-brand-blue); color: var(--ci-text-light); }
+.btn-primary:hover { background: var(--ci-color-brand-blue-hover); }
+.btn-secondary { background: var(--ci-bg-card-white); color: var(--ci-text-dark); border: 1px solid var(--ci-border); }
+.btn-secondary:hover { background: var(--ci-bg-page); border-color: var(--ci-color-brand-blue); }
+.btn-success { background: var(--ci-success); color: #fff; }
+.btn-danger { background: var(--ci-danger); color: #fff; }
+.btn-sm { padding: 6px 12px; font-size: 11px; }
+.btn-xs { padding: 4px 8px; font-size: 10px; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* LAYOUT */
+.app-shell { display: flex; height: 100vh; overflow: hidden; }
+.sidebar { width: 240px; background: var(--ci-color-brand-dark); color: #fff; display: flex; flex-direction: column; transition: width 0.2s; flex-shrink: 0; overflow: hidden; }
+.sidebar.collapsed { width: 52px; }
+.sidebar-header { padding: var(--spacing-md); display: flex; align-items: center; gap: var(--spacing-xs); border-bottom: 1px solid rgba(255,255,255,0.1); min-height: 56px; }
+.sidebar-header h1 { font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; font-family: var(--font-display); }
+.sidebar-toggle { background: rgba(255,255,255,0.1); border: none; color: #fff; width: 28px; height: 28px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-left: auto; }
+.sidebar-nav { flex: 1; padding: var(--sp-xs); overflow-y: auto; }
+.nav-section { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: rgba(255,255,255,0.4); padding: 12px 8px 4px; white-space: nowrap; }
+.nav-btn { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 10px; border: none; background: transparent; color: rgba(255,255,255,0.7); border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 500; transition: all 0.15s; text-align: left; white-space: nowrap; }
+.nav-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+.nav-btn.active { background: rgba(0,85,255,0.3); color: #fff; border-left: 3px solid var(--ci-color-brand-blue); padding-left: 7px; }
+.nav-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+.nav-badge { margin-left: auto; background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.8); padding: 1px 7px; border-radius: 10px; font-size: 10px; font-weight: 700; }
+.nav-badge.danger { background: var(--ci-danger); color: #fff; }
+.nav-badge.warn { background: var(--ci-warn); color: #fff; }
+.sidebar.collapsed .nav-btn span, .sidebar.collapsed .nav-badge, .sidebar.collapsed .nav-section, .sidebar.collapsed .sidebar-header h1 { display: none; }
+.sidebar-footer { padding: var(--sp-xs); border-top: 1px solid rgba(255,255,255,0.1); }
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.topbar { display: flex; align-items: center; padding: 10px var(--spacing-lg); background: var(--ci-bg-card-white); border-bottom: 1px solid var(--ci-border); min-height: 56px; gap: 10px; flex-shrink: 0; flex-wrap: wrap; }
+.topbar-brand { font-family: var(--font-display); font-weight: 700; font-size: 15px; color: var(--ci-color-brand-dark); white-space: nowrap; }
+.topbar-sep { width: 1px; height: 20px; background: var(--ci-border); flex-shrink: 0; }
+.search-wrap { flex: 1; min-width: 200px; max-width: 420px; position: relative; }
+.search-wrap input { padding-left: 32px; font-size: 12px; }
+.search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--ci-text-muted); pointer-events: none; }
+.topbar-actions { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+.stat-strip { display: flex; align-items: center; gap: 8px; padding: 6px var(--spacing-lg); background: var(--ci-bg-card-white); border-bottom: 1px solid var(--ci-border); font-size: 11px; color: var(--ci-text-muted); flex-shrink: 0; flex-wrap: wrap; }
+.stat-pill { background: var(--ci-bg-card-light); padding: 2px 10px; border-radius: 12px; font-weight: 600; color: var(--ci-text-dark); }
+.stat-pill.blue { background: rgba(0,85,255,0.1); color: var(--ci-color-brand-blue); }
+.stat-pill.green { background: rgba(16,185,129,0.1); color: var(--ci-success); }
+.stat-pill.red { background: rgba(239,68,68,0.1); color: var(--ci-danger); }
+.page-scroll { flex: 1; overflow-y: auto; padding: var(--spacing-lg); }
+
+/* VIEWS */
+.view { display: none; }
+.view.active { display: block; animation: viewFadeIn 0.2s ease-out; }
+@keyframes viewFadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+.view-header { margin-bottom: var(--spacing-lg); display: flex; justify-content: space-between; align-items: flex-start; gap: var(--spacing-md); flex-wrap: wrap; }
+.view-header h2 { font-size: 20px; font-weight: 800; font-family: var(--font-display); letter-spacing: -0.3px; }
+.view-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: var(--spacing-md); }
+.filter-chips { display: flex; gap: 6px; flex-wrap: wrap; padding: 6px 0; }
+.filter-chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; background: var(--ci-bg-card-light); border: 1px solid var(--ci-border); color: var(--ci-text-muted); cursor: pointer; transition: all 0.15s; user-select: none; }
+.filter-chip:hover { border-color: var(--ci-color-brand-blue); color: var(--ci-color-brand-blue); }
+.filter-chip.active { background: rgba(0,85,255,0.08); border-color: var(--ci-color-brand-blue); color: var(--ci-color-brand-blue); }
+
+/* CARDS */
+.card { background: var(--ci-bg-card-white); border: 1px solid var(--ci-border); border-radius: var(--ci-radius-card); box-shadow: var(--ci-shadow); }
+.card-header { padding: var(--spacing-md); border-bottom: 1px solid var(--ci-border); display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.card-header strong { font-family: var(--font-display); font-size: 14px; letter-spacing: -0.2px; }
+.card-body { padding: var(--spacing-md); }
+.card-body.no-pad { padding: 0; }
+
+/* STAT CARDS */
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: var(--spacing-md); margin-bottom: var(--spacing-lg); }
+.stat-card { background: var(--ci-bg-card-white); border: 1px solid var(--ci-border); border-left: 4px solid var(--ci-color-brand-blue); border-radius: var(--ci-radius-input); padding: var(--spacing-md) var(--spacing-md) var(--spacing-md) var(--spacing-lg); cursor: pointer; transition: all 0.15s; box-shadow: var(--ci-shadow); animation: viewFadeIn 0.25s ease-out backwards; }
+.stat-card:hover { transform: translateY(-2px); box-shadow: var(--ci-shadow-lg); }
+.stat-card.c2 { border-left-color: var(--ci-warn); }
+.stat-card.c3 { border-left-color: #8b5cf6; }
+.stat-card.c4 { border-left-color: var(--ci-danger); }
+.stat-card.c5 { border-left-color: var(--ci-success); }
+.stat-num { font-size: 32px; font-weight: 700; font-family: var(--font-mono); color: var(--ci-color-brand-blue); letter-spacing: -1px; line-height: 1.1; }
+.stat-card.c2 .stat-num { color: var(--ci-warn); }
+.stat-card.c3 .stat-num { color: #8b5cf6; }
+.stat-card.c4 .stat-num { color: var(--ci-danger); }
+.stat-card.c5 .stat-num { color: var(--ci-success); }
+.stat-label { font-size: 10px; color: var(--ci-text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; margin-top: 4px; }
+
+/* TABLES */
+.data-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.data-table th { text-align: left; padding: 10px 12px; font-weight: 600; font-size: 10px; text-transform: uppercase; letter-spacing: 0.3px; color: var(--ci-text-muted); background: var(--ci-bg-page); border-bottom: 1px solid var(--ci-border); white-space: nowrap; cursor: pointer; user-select: none; }
+.data-table th:hover { color: var(--ci-color-brand-blue); }
+.data-table td { padding: 10px 12px; border-bottom: 1px solid var(--ci-border); vertical-align: top; }
+.data-table tr:last-child td { border-bottom: none; }
+.data-table tr:hover td { background: rgba(0,85,255,0.02); }
+.data-table tr.group-row td { background: var(--ci-bg-page); font-weight: 700; font-size: 11px; color: var(--ci-text-muted); padding: 6px 12px; cursor: pointer; }
+.sort-icon { margin-left: 3px; opacity: 0.4; }
+.sort-icon.active { opacity: 1; color: var(--ci-color-brand-blue); }
+
+/* BADGES */
+.badge { display: inline-block; padding: 2px 8px; border-radius: var(--ci-radius-small); font-size: 10px; font-weight: 700; white-space: nowrap; }
+.badge-blue { background: rgba(0,85,255,0.1); color: var(--ci-color-brand-blue); }
+.badge-green { background: rgba(16,185,129,0.1); color: var(--ci-success); }
+.badge-warn { background: rgba(245,158,11,0.1); color: var(--ci-warn); }
+.badge-red { background: rgba(239,68,68,0.1); color: var(--ci-danger); }
+.badge-purple { background: rgba(139,92,246,0.1); color: #8b5cf6; }
+.badge-gray { background: var(--ci-bg-card-light); color: var(--ci-text-muted); }
+.badge-mono { font-family: var(--font-mono); }
+
+/* STATUS CHIPS */
+.status-chip { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 10px; font-weight: 700; cursor: pointer; user-select: none; transition: all 0.15s; }
+.status-chip:hover { filter: brightness(0.9); }
+.status-offen { background: #e0e7ff; color: #4338ca; }
+.status-in-arbeit { background: #dbeafe; color: #1d4ed8; }
+.status-delegiert { background: #fef3c7; color: #b45309; }
+.status-review { background: #ede9fe; color: #7c3aed; }
+.status-erledigt { background: #d1fae5; color: #065f46; }
+
+/* CONTROL CARDS */
+.ctrl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: var(--spacing-md); }
+.ctrl-card { background: var(--ci-bg-card-white); border: 1px solid var(--ci-border); border-radius: var(--ci-radius-card); padding: var(--spacing-md); cursor: pointer; transition: all 0.15s; box-shadow: var(--ci-shadow); }
+.ctrl-card:hover { border-color: var(--ci-color-brand-blue); box-shadow: var(--ci-shadow-lg); transform: translateY(-1px); }
+.ctrl-card-id { font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: var(--ci-color-brand-blue); margin-bottom: 4px; }
+.ctrl-card-title { font-size: 13px; font-weight: 600; font-family: var(--font-display); margin-bottom: 8px; line-height: 1.35; }
+.ctrl-card-prose { font-size: 11px; color: var(--ci-text-muted); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 8px; }
+.ctrl-card-meta { display: flex; flex-wrap: wrap; gap: 4px; }
+.ctrl-card-group { font-size: 10px; font-weight: 600; color: var(--ci-text-muted); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.3px; }
+
+/* TREE VIEW */
+.tree-group { margin-bottom: var(--spacing-md); }
+.tree-group-hdr { display: flex; align-items: center; gap: 8px; padding: 10px var(--spacing-md); background: var(--ci-bg-card-white); border: 1px solid var(--ci-border); border-radius: var(--ci-radius-input); cursor: pointer; font-weight: 700; font-family: var(--font-display); font-size: 13px; transition: all 0.15s; }
+.tree-group-hdr:hover { border-color: var(--ci-color-brand-blue); }
+.tree-group-hdr.collapsed .tree-arrow { transform: rotate(-90deg); }
+.tree-arrow { transition: transform 0.2s; color: var(--ci-text-muted); font-size: 10px; }
+.tree-group-count { margin-left: auto; font-size: 10px; font-weight: 600; color: var(--ci-text-muted); background: var(--ci-bg-card-light); padding: 2px 8px; border-radius: 10px; }
+.tree-subgroup { margin: 4px 0 4px 20px; }
+.tree-subgroup-hdr { display: flex; align-items: center; gap: 8px; padding: 7px var(--spacing-md); background: var(--ci-bg-page); border: 1px solid var(--ci-border); border-radius: var(--ci-radius-small); cursor: pointer; font-weight: 600; font-size: 12px; transition: all 0.15s; }
+.tree-subgroup-hdr:hover { border-color: var(--ci-color-brand-blue); }
+.tree-subgroup-hdr.collapsed .tree-arrow { transform: rotate(-90deg); }
+.tree-items { padding: 4px 0 4px 20px; display: flex; flex-direction: column; gap: 3px; }
+.tree-item { display: flex; align-items: flex-start; gap: 8px; padding: 8px 12px; background: var(--ci-bg-card-white); border: 1px solid var(--ci-border); border-radius: var(--ci-radius-small); cursor: pointer; transition: all 0.15s; border-left: 3px solid transparent; }
+.tree-item:hover { border-left-color: var(--ci-color-brand-blue); background: rgba(0,85,255,0.02); }
+.tree-item-id { font-family: var(--font-mono); font-size: 10px; font-weight: 700; color: var(--ci-color-brand-blue); min-width: 90px; flex-shrink: 0; }
+.tree-item-title { font-size: 12px; font-weight: 500; flex: 1; }
+.tree-item-badges { display: flex; gap: 4px; flex-wrap: wrap; flex-shrink: 0; }
+.tree-item.nested { margin-left: 16px; border-left-color: rgba(0,85,255,0.2); }
+
+/* KANBAN */
+.kanban-wrap { display: flex; gap: var(--spacing-md); overflow-x: auto; padding-bottom: var(--spacing-md); min-height: 400px; align-items: flex-start; }
+.kanban-col { min-width: 280px; max-width: 320px; background: var(--ci-bg-card-white); border: 1px solid var(--ci-border); border-radius: var(--ci-radius-card); display: flex; flex-direction: column; max-height: calc(100vh - 220px); flex-shrink: 0; }
+.kanban-col-hdr { padding: var(--spacing-sm) var(--spacing-md); border-bottom: 1px solid var(--ci-border); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: var(--ci-bg-card-white); border-radius: var(--ci-radius-card) var(--ci-radius-card) 0 0; }
+.kanban-col-title { font-weight: 700; font-size: 12px; font-family: var(--font-display); }
+.kanban-col-count { font-size: 10px; color: var(--ci-text-muted); background: var(--ci-bg-card-light); padding: 2px 8px; border-radius: 10px; font-weight: 600; }
+.kanban-col-body { padding: var(--spacing-sm); overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.kanban-card { background: var(--ci-bg-page); border: 1px solid var(--ci-border); border-radius: var(--ci-radius-input); padding: 10px; cursor: pointer; transition: all 0.15s; }
+.kanban-card:hover { border-color: var(--ci-color-brand-blue); }
+.kanban-card-id { font-family: var(--font-mono); font-size: 10px; font-weight: 700; color: var(--ci-color-brand-blue); }
+.kanban-card-title { font-size: 11px; font-weight: 500; margin-top: 3px; line-height: 1.3; }
+.kanban-card-meta { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
+
+/* MATRIX */
+.matrix-wrap { overflow: auto; }
+.matrix-table { border-collapse: collapse; font-size: 11px; }
+.matrix-table th, .matrix-table td { border: 1px solid var(--ci-border); padding: 6px 10px; }
+.matrix-table th { background: var(--ci-bg-page); font-weight: 600; font-size: 10px; text-transform: uppercase; letter-spacing: 0.3px; color: var(--ci-text-muted); white-space: nowrap; }
+.matrix-table th.row-hdr { text-align: left; min-width: 140px; }
+.matrix-cell-has { color: var(--ci-color-brand-blue); font-weight: 700; cursor: pointer; text-align: center; }
+.matrix-cell-has:hover { background: rgba(0,85,255,0.08); }
+.matrix-cell-empty { color: var(--ci-bg-card-light); text-align: center; }
+
+/* CHART CONTAINERS */
+.chart-container { background: var(--ci-bg-card-white); border: 1px solid var(--ci-border); border-radius: var(--ci-radius-card); padding: var(--spacing-md); box-shadow: var(--ci-shadow); }
+.chart-title { font-family: var(--font-display); font-size: 14px; font-weight: 700; margin-bottom: var(--spacing-md); }
+#graph-svg { width: 100%; height: 500px; border-radius: 10px; background: var(--ci-bg-page); }
+#sunburst-svg { width: 100%; height: 480px; }
+.chart-legend { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 12px; font-size: 11px; }
+.legend-item { display: flex; align-items: center; gap: 6px; }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+/* LINT */
+.lint-table td:first-child { font-family: var(--font-mono); font-size: 11px; }
+.lint-sev-error { color: var(--ci-danger); font-weight: 700; }
+.lint-sev-warn { color: var(--ci-warn); font-weight: 700; }
+.lint-sev-info { color: var(--ci-color-brand-blue); font-weight: 700; }
+
+/* DIFF */
+.diff-row-added td { background: rgba(16,185,129,0.06); }
+.diff-row-removed td { background: rgba(239,68,68,0.06); }
+.diff-row-changed td { background: rgba(245,158,11,0.06); }
+.diff-add { color: var(--ci-success); font-weight: 600; }
+.diff-remove { color: var(--ci-danger); font-weight: 600; }
+.diff-change { color: var(--ci-warn); font-weight: 600; }
+
+/* MODAL */
+.modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.4); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.2s; backdrop-filter: blur(2px); }
+.modal-overlay.open { opacity: 1; pointer-events: auto; }
+.modal { background: var(--ci-bg-card-white); border-radius: var(--ci-radius-card); width: 720px; max-width: 96vw; max-height: 88vh; display: flex; flex-direction: column; box-shadow: 0 20px 60px rgba(0,0,0,0.2); transform: scale(0.95); transition: transform 0.2s ease-out; }
+.modal-overlay.open .modal { transform: scale(1); }
+.modal-header { display: flex; justify-content: space-between; align-items: center; padding: var(--spacing-md) var(--spacing-lg); border-bottom: 1px solid var(--ci-border); }
+.modal-header h3 { font-size: 16px; font-weight: 700; font-family: var(--font-display); }
+.modal-close { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--ci-text-muted); padding: 4px 8px; border-radius: 6px; }
+.modal-close:hover { background: var(--ci-bg-page); }
+.modal-body { padding: var(--spacing-lg); overflow-y: auto; flex: 1; }
+.modal-footer { padding: var(--spacing-sm) var(--spacing-lg); border-top: 1px solid var(--ci-border); display: flex; justify-content: flex-end; gap: 8px; }
+.modal-section { margin-bottom: var(--spacing-md); }
+.modal-section-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--ci-text-muted); margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid var(--ci-border); }
+.prop-grid { display: grid; grid-template-columns: 130px 1fr; gap: 6px 12px; font-size: 12px; }
+.prop-label { color: var(--ci-text-muted); font-weight: 600; }
+.prose-block { font-size: 12px; line-height: 1.65; color: var(--ci-text-dark); background: var(--ci-bg-page); padding: var(--spacing-sm) var(--spacing-md); border-radius: var(--ci-radius-input); white-space: pre-wrap; border: 1px solid var(--ci-border); }
+.link-list { display: flex; flex-direction: column; gap: 4px; }
+.link-item { display: flex; align-items: center; gap: 8px; padding: 5px 10px; background: var(--ci-bg-page); border-radius: var(--ci-radius-small); font-size: 11px; }
+.link-item a { font-family: var(--font-mono); font-size: 11px; cursor: pointer; }
+.json-pre { font-family: var(--font-mono); font-size: 10px; background: var(--ci-bg-page); padding: var(--spacing-sm); border-radius: var(--ci-radius-input); overflow: auto; max-height: 300px; border: 1px solid var(--ci-border); white-space: pre; }
+
+/* TOAST */
+.toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(100px); padding: 10px 20px; border-radius: var(--ci-radius-button); font-size: 12px; font-weight: 600; z-index: 2000; transition: transform 0.3s; pointer-events: none; white-space: nowrap; }
+.toast.show { transform: translateX(-50%) translateY(0); }
+.toast.success { background: var(--ci-success); color: #fff; }
+.toast.error { background: var(--ci-danger); color: #fff; }
+.toast.info { background: var(--ci-color-brand-blue); color: #fff; }
+.toast.warn { background: var(--ci-warn); color: #fff; }
+
+/* EMPTY STATE */
+.empty-state { text-align: center; padding: 60px 24px; color: var(--ci-text-muted); }
+.empty-state-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.5; }
+.empty-state h3 { font-size: 16px; font-weight: 700; font-family: var(--font-display); color: var(--ci-text-dark); margin-bottom: 8px; }
+.empty-state p { font-size: 13px; margin-bottom: 16px; }
+
+/* FORM */
+.form-row { margin-bottom: var(--spacing-md); }
+.field-label { font-size: 10px; font-weight: 600; color: var(--ci-text-muted); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.3px; display: block; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-md); }
+
+/* SEARCH HIGHLIGHT */
+.param-label { background: #fef9c3; color: #92400e; border-radius: 3px; padding: 0 4px; font-family: var(--font-mono); font-size: 10px; }
+.param-value { background: rgba(139,92,246,0.1); color: #6d28d9; border-radius: 3px; padding: 0 4px; font-family: var(--font-mono); font-size: 10px; }
+
+/* GRAPH TOOLBAR */
+.graph-toolbar { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; flex-wrap: wrap; }
+.graph-legend { display: flex; gap: 16px; margin-top: 8px; font-size: 11px; }
+.graph-legend-item { display: flex; align-items: center; gap: 6px; }
+
+/* RESPONSIVE */
+@media (max-width: 900px) {
+  .sidebar { width: 52px; }
+  .sidebar .nav-btn span, .sidebar .nav-badge, .sidebar .nav-section, .sidebar .sidebar-header h1 { display: none; }
+  .ctrl-grid { grid-template-columns: 1fr; }
+  .stat-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* PRINT */
+@media print {
+  .sidebar, .topbar, .stat-strip, .view-toolbar, .topbar-actions { display: none !important; }
+  .app-shell { display: block; }
+  .main { overflow: visible; }
+  .page-scroll { overflow: visible; padding: 0; }
+  .view { display: block !important; }
+  .ctrl-card { break-inside: avoid; }
+  body { overflow: auto; height: auto; background: #fff; }
+}
+</style>
+</head>
+<body>
+<div class="app-shell">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/></svg>
+      <h1>OSCAL Viewer</h1>
+      <button class="sidebar-toggle" onclick="App.toggleSidebar()" title="Sidebar ein-/ausblenden">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+      </button>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Analyse</div>
+      <button class="nav-btn active" data-view="dashboard" onclick="App.nav('dashboard')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        <span>Dashboard</span>
+      </button>
+      <button class="nav-btn" data-view="table" onclick="App.nav('table')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-4M9 3v18M9 3h6m0 0h4"/></svg>
+        <span>Tabelle</span>
+      </button>
+      <button class="nav-btn" data-view="cards" onclick="App.nav('cards')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="9" height="9" rx="2"/><rect x="13" y="3" width="9" height="9" rx="2"/><rect x="2" y="14" width="9" height="9" rx="2"/><rect x="13" y="14" width="9" height="9" rx="2"/></svg>
+        <span>Karten</span>
+      </button>
+      <button class="nav-btn" data-view="tree" onclick="App.nav('tree')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+        <span>Baum</span>
+      </button>
+      <button class="nav-btn" data-view="kanban" onclick="App.nav('kanban')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="6" height="18" rx="1"/><rect x="9" y="3" width="6" height="11" rx="1"/><rect x="16" y="3" width="6" height="14" rx="1"/></svg>
+        <span>Kanban</span>
+      </button>
+      <button class="nav-btn" data-view="matrix" onclick="App.nav('matrix')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20M2 6h4m0 12H2m0-6h4M18 6h4m-4 12h4m0-6h-4M6 2v4M6 18v4M18 2v4M18 18v4"/></svg>
+        <span>Matrix</span>
+      </button>
+      <div class="nav-section">Visualisierung</div>
+      <button class="nav-btn" data-view="graph" onclick="App.nav('graph')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/><path d="M12 7v4m-5.2 6-1.5-4m10.4 4 1.5-4M8 16l4-6 4 6"/></svg>
+        <span>Graph</span>
+      </button>
+      <button class="nav-btn" data-view="sunburst" onclick="App.nav('sunburst')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>
+        <span>Sunburst</span>
+      </button>
+      <div class="nav-section">Qualität</div>
+      <button class="nav-btn" data-view="lint" onclick="App.nav('lint')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4m6 2a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/></svg>
+        <span>Lint</span>
+        <span class="nav-badge danger" id="lint-badge" style="display:none">0</span>
+      </button>
+      <button class="nav-btn" data-view="diff" onclick="App.nav('diff')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6l-1-1 1-1M3 12l-1-1 1-1M3 18l-1-1 1-1"/></svg>
+        <span>Diff</span>
+      </button>
+      <div class="nav-section">Export</div>
+      <button class="nav-btn" data-view="export" onclick="App.nav('export')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+        <span>Export</span>
+      </button>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="nav-btn" onclick="A.loadSample()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v6m0 0l3-3m-3 3L9 5M2 12h6m0 0L5 9m3 3-3 3M20 12h-6m0 0 3-3m-3 3 3 3M12 22v-6m0 0-3 3m3-3 3 3"/></svg>
+        <span>Beispiel laden</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <span class="topbar-brand">OSCAL Viewer</span>
+      <div class="topbar-sep"></div>
+      <div class="search-wrap">
+        <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input type="text" id="search-input" placeholder="Suche: id:GC.2.* sec:hoch incoming>=3 …" oninput="A.onSearch(this.value)">
+      </div>
+      <div class="topbar-actions">
+        <label class="btn btn-secondary btn-sm" style="cursor:pointer">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+          JSON laden
+          <input type="file" id="file-input" accept=".json" style="display:none" onchange="A.onFileInput(this)">
+        </label>
+        <button class="btn btn-secondary btn-sm" onclick="A.promptUrl()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          URL
+        </button>
+        <button class="btn btn-secondary btn-sm" onclick="window.print()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+          PDF
+        </button>
+      </div>
+    </div>
+
+    <div class="stat-strip" id="stat-strip">
+      <span id="stat-total" class="stat-pill blue">0 Controls</span>
+      <span id="stat-filtered" class="stat-pill">0 gefiltert</span>
+      <span id="stat-groups" class="stat-pill">0 Gruppen</span>
+      <span id="stat-broken" class="stat-pill" style="display:none"></span>
+      <div id="quick-chips" class="filter-chips" style="flex:1;margin-left:8px;"></div>
+    </div>
+
+    <div class="page-scroll" id="page-scroll">
+
+      <!-- DASHBOARD -->
+      <div class="view active" id="view-dashboard">
+        <div class="view-header"><h2>Dashboard</h2></div>
+        <div id="dashboard-content">
+          <div class="empty-state">
+            <div class="empty-state-icon">📂</div>
+            <h3>Kein Katalog geladen</h3>
+            <p>Lade eine OSCAL Catalog JSON-Datei, um zu starten.</p>
+            <label class="btn btn-primary" style="cursor:pointer">JSON laden<input type="file" accept=".json" style="display:none" onchange="A.onFileInput(this)"></label>
+          </div>
+        </div>
+      </div>
+
+      <!-- TABELLE -->
+      <div class="view" id="view-table">
+        <div class="view-header">
+          <h2>Tabelle</h2>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <select id="group-by" onchange="V.table()" style="max-width:160px;font-size:11px;">
+              <option value="">Nicht gruppieren</option>
+            </select>
+            <select id="sort-by" onchange="V.table()" style="max-width:160px;font-size:11px;">
+              <option value="id-asc">ID ↑</option>
+              <option value="id-desc">ID ↓</option>
+              <option value="title-asc">Titel A→Z</option>
+              <option value="title-desc">Titel Z→A</option>
+              <option value="incoming-desc">Eingehend ↓</option>
+              <option value="outgoing-desc">Ausgehend ↓</option>
+            </select>
+          </div>
+        </div>
+        <div class="card"><div class="card-body no-pad"><div id="table-content"></div></div></div>
+      </div>
+
+      <!-- KARTEN -->
+      <div class="view" id="view-cards">
+        <div class="view-header"><h2>Karten</h2></div>
+        <div id="cards-content" class="ctrl-grid"></div>
+      </div>
+
+      <!-- BAUM -->
+      <div class="view" id="view-tree">
+        <div class="view-header">
+          <h2>Baum</h2>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-secondary btn-sm" onclick="V.treeExpandAll()">Alle öffnen</button>
+            <button class="btn btn-secondary btn-sm" onclick="V.treeCollapseAll()">Alle schließen</button>
+          </div>
+        </div>
+        <div id="tree-content"></div>
+      </div>
+
+      <!-- KANBAN -->
+      <div class="view" id="view-kanban">
+        <div class="view-header">
+          <h2>Kanban</h2>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <label style="font-size:11px;color:var(--ci-text-muted)">Spalten nach:</label>
+            <select id="kanban-field" onchange="V.kanban()" style="max-width:200px;font-size:11px;"></select>
+          </div>
+        </div>
+        <div id="kanban-content" class="kanban-wrap"></div>
+      </div>
+
+      <!-- MATRIX -->
+      <div class="view" id="view-matrix">
+        <div class="view-header">
+          <h2>Matrix</h2>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <label style="font-size:11px;color:var(--ci-text-muted)">Zeilen:</label>
+            <select id="matrix-row" onchange="V.matrix()" style="max-width:160px;font-size:11px;"></select>
+            <label style="font-size:11px;color:var(--ci-text-muted)">Spalten:</label>
+            <select id="matrix-col" onchange="V.matrix()" style="max-width:160px;font-size:11px;"></select>
+          </div>
+        </div>
+        <div class="chart-container"><div id="matrix-content" class="matrix-wrap"></div></div>
+      </div>
+
+      <!-- GRAPH -->
+      <div class="view" id="view-graph">
+        <div class="view-header"><h2>Beziehungsgraph</h2></div>
+        <div class="chart-container">
+          <div class="graph-toolbar">
+            <button class="btn btn-secondary btn-sm" onclick="Chart.graphFit()">Einpassen</button>
+            <label style="font-size:11px;color:var(--ci-text-muted)">Max. Nodes:</label>
+            <select id="graph-limit" onchange="Chart.drawGraph()" style="max-width:100px;font-size:11px;">
+              <option value="200">200</option>
+              <option value="500">500</option>
+              <option value="1000">1000</option>
+            </select>
+            <div class="graph-legend">
+              <div class="graph-legend-item"><svg width="20" height="4"><line x1="0" y1="2" x2="20" y2="2" stroke="#0055ff" stroke-width="2"/></svg><span>related</span></div>
+              <div class="graph-legend-item"><svg width="20" height="4"><line x1="0" y1="2" x2="20" y2="2" stroke="#f59e0b" stroke-width="2"/></svg><span>required</span></div>
+            </div>
+          </div>
+          <svg id="graph-svg"></svg>
+        </div>
+      </div>
+
+      <!-- SUNBURST -->
+      <div class="view" id="view-sunburst">
+        <div class="view-header"><h2>Sunburst</h2></div>
+        <div class="chart-container">
+          <svg id="sunburst-svg"></svg>
+          <div class="chart-legend" id="sunburst-legend"></div>
+        </div>
+      </div>
+
+      <!-- LINT -->
+      <div class="view" id="view-lint">
+        <div class="view-header">
+          <h2>Qualitätsprüfung</h2>
+          <button class="btn btn-primary btn-sm" onclick="Lint.run()">Prüfung starten</button>
+        </div>
+        <div id="lint-content">
+          <div class="empty-state"><div class="empty-state-icon">🔍</div><h3>Noch keine Prüfung</h3><p>Klicke auf "Prüfung starten".</p></div>
+        </div>
+      </div>
+
+      <!-- DIFF -->
+      <div class="view" id="view-diff">
+        <div class="view-header"><h2>Katalog-Vergleich</h2></div>
+        <div class="card" style="margin-bottom:var(--spacing-md);">
+          <div class="card-header"><strong>Zweiten Katalog laden</strong></div>
+          <div class="card-body" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+            <label class="btn btn-secondary btn-sm" style="cursor:pointer">
+              Datei wählen
+              <input type="file" accept=".json" style="display:none" onchange="Diff.loadB(this)">
+            </label>
+            <input type="url" id="diff-url-input" placeholder="GitHub URL des zweiten Katalogs" style="max-width:400px;font-size:11px;">
+            <button class="btn btn-secondary btn-sm" onclick="Diff.loadUrl()">URL laden</button>
+          </div>
+        </div>
+        <div id="diff-content">
+          <div class="empty-state"><div class="empty-state-icon">⚖️</div><h3>Zweiten Katalog laden</h3><p>Lade einen zweiten Katalog zum Vergleich.</p></div>
+        </div>
+      </div>
+
+      <!-- EXPORT -->
+      <div class="view" id="view-export">
+        <div class="view-header"><h2>Export</h2></div>
+        <div class="stat-grid" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr));">
+          <div class="card" style="padding:var(--spacing-md);cursor:pointer;" onclick="Export.csv(';')">
+            <div style="font-size:24px;margin-bottom:8px;">📊</div>
+            <div style="font-weight:700;font-family:var(--font-display);margin-bottom:4px;">CSV Export</div>
+            <div style="font-size:11px;color:var(--ci-text-muted);">Gefilterte Controls als CSV (Semikolon)</div>
+          </div>
+          <div class="card" style="padding:var(--spacing-md);cursor:pointer;" onclick="Export.profile()">
+            <div style="font-size:24px;margin-bottom:8px;">🎯</div>
+            <div style="font-weight:700;font-family:var(--font-display);margin-bottom:4px;">OSCAL Profile</div>
+            <div style="font-size:11px;color:var(--ci-text-muted);">Minimales Profile JSON mit include-controls</div>
+          </div>
+          <div class="card" style="padding:var(--spacing-md);cursor:pointer;" onclick="Export.miniCatalog()">
+            <div style="font-size:24px;margin-bottom:8px;">📦</div>
+            <div style="font-weight:700;font-family:var(--font-display);margin-bottom:4px;">Mini-Katalog</div>
+            <div style="font-size:11px;color:var(--ci-text-muted);">Ausgewählte Controls als eigenständiges Katalog-JSON</div>
+          </div>
+          <div class="card" style="padding:var(--spacing-md);cursor:pointer;" onclick="Export.markdown()">
+            <div style="font-size:24px;margin-bottom:8px;">📝</div>
+            <div style="font-weight:700;font-family:var(--font-display);margin-bottom:4px;">Markdown Report</div>
+            <div style="font-size:11px;color:var(--ci-text-muted);">Controls mit Properties und Links als Markdown</div>
+          </div>
+          <div class="card" style="padding:var(--spacing-md);cursor:pointer;" onclick="window.print()">
+            <div style="font-size:24px;margin-bottom:8px;">🖨️</div>
+            <div style="font-weight:700;font-family:var(--font-display);margin-bottom:4px;">PDF (Drucken)</div>
+            <div style="font-size:11px;color:var(--ci-text-muted);">Aktuelle Ansicht als PDF drucken</div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:var(--spacing-md);">
+          <div class="card-header"><strong>Workspace exportieren</strong></div>
+          <div class="card-body" style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn btn-secondary btn-sm" onclick="Export.workspace()">Review-Status exportieren</button>
+            <button class="btn btn-secondary btn-sm" onclick="Export.clipCSV()">In Zwischenablage (CSV)</button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /page-scroll -->
+  </div><!-- /main -->
+</div><!-- /app-shell -->
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)Modal.close()">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-title"></h3>
+      <button class="modal-close" onclick="Modal.close()">×</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-footer" id="modal-footer"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast-el"></div>
+
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════
+// U — Utilities
+// ═══════════════════════════════════════════════════════
+var U = {
+  esc: function(s) {
+    if (s == null) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  },
+  uid: function() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      var r = Math.random()*16|0, v = c==='x'?r:(r&0x3|0x8);
+      return v.toString(16);
+    });
+  },
+  debounce: function(fn, ms) {
+    var t; return function() { clearTimeout(t); t = setTimeout(fn.bind(this, arguments[0]), ms||300); };
+  },
+  splitMulti: function(s, delims) {
+    if (!s) return [];
+    var re = new RegExp('['+delims.replace(/[-[\]{}()*+?.,\\^$|#\s]/g,'\\$&')+']');
+    return s.split(re).map(function(x){ return x.trim(); }).filter(Boolean);
+  },
+  download: function(filename, content, mime) {
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([content], {type: mime||'text/plain'}));
+    a.download = filename;
+    a.click();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
+  },
+  normalizeGHUrl: function(url) {
+    // Convert github.com/user/repo/blob/branch/file → raw.githubusercontent.com
+    return url.replace(/github\.com\/([^/]+)\/([^/]+)\/blob\/([^/]+)\/(.+)/,
+      'raw.githubusercontent.com/$1/$2/$3/$4');
+  },
+  highlight: function(text, query) {
+    if (!query || !text) return U.esc(text);
+    // Only highlight plain-text tokens (not key:value tokens)
+    var words = query.split(/\s+/).filter(function(t) {
+      return t && !t.includes(':') && !t.match(/^-/) && !t.match(/[<>=]/);
+    });
+    var escaped = U.esc(text);
+    words.forEach(function(w) {
+      var re = new RegExp('('+w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')', 'gi');
+      escaped = escaped.replace(re, '<mark>$1</mark>');
+    });
+    return escaped;
+  },
+  highlightParams: function(text) {
+    if (!text) return '';
+    return U.esc(text).replace(/\{\{\s*insert\s*:\s*param\s*,\s*([^}\s]+)\s*\}\}/gi,
+      '<span class="param-label">{{ $1 }}</span>');
+  },
+  get: function(id) { return document.getElementById(id); },
+  save: function(key, val) { try { localStorage.setItem('ov_'+key, JSON.stringify(val)); } catch(e){} },
+  load: function(key, def) { try { var v = localStorage.getItem('ov_'+key); return v != null ? JSON.parse(v) : def; } catch(e){ return def; } }
+};
+
+// ═══════════════════════════════════════════════════════
+// Store — Application Data
+// ═══════════════════════════════════════════════════════
+var Store = {
+  // Primary catalog
+  catalog: null,       // raw JSON
+  controls: [],        // parsed controls (flat)
+  aliasMap: {},        // alias → id
+  linkIndex: null,     // { out: Map(id→[{rel,tid}]), inc: Map(id→[{rel,sid}]), broken: [] }
+  nsKeys: [],          // sorted namespace property keys
+  groups: [],          // top-level groups
+  practices: [],       // {id, title, topics:[]}
+  practiceById: {},
+  topicById: {},
+  catMeta: {},         // {title, version, oscalVersion, lastModified}
+
+  // Secondary catalog for diff
+  catalogB: null,
+  controlsB: [],
+
+  // Lint results cache
+  lintResults: null,
+
+  // Workspace (review status per control)
+  workspace: {},       // id → {status, tags, notes, evidence}
+
+  init: function() {
+    Store.workspace = U.load('workspace', {});
+  },
+  saveWorkspace: function() {
+    U.save('workspace', Store.workspace);
+  },
+  getWS: function(id) {
+    if (!Store.workspace[id]) Store.workspace[id] = {status:'offen', tags:[], notes:'', evidence:''};
+    return Store.workspace[id];
+  }
+};
+
+// ═══════════════════════════════════════════════════════
+// AS — Application State (transient)
+// ═══════════════════════════════════════════════════════
+var AS = {
+  view: 'dashboard',
+  query: '',
+  filtered: [],        // filtered controls array
+  sortBy: 'id-asc',
+  groupBy: '',
+  kanbanField: '',
+  matrixRow: '',
+  matrixCol: '',
+  treeState: {},       // group/subgroup collapsed state
+  graphInitialized: false,
+  sunburstInitialized: false
+};
+
+// ═══════════════════════════════════════════════════════
+// Toast
+// ═══════════════════════════════════════════════════════
+var Toast = {
+  _t: null,
+  show: function(msg, type) {
+    var el = U.get('toast-el');
+    el.textContent = msg;
+    el.className = 'toast ' + (type||'info');
+    el.classList.add('show');
+    clearTimeout(Toast._t);
+    Toast._t = setTimeout(function(){ el.classList.remove('show'); }, 2800);
+  }
+};
+
+// ═══════════════════════════════════════════════════════
+// Parse — OSCAL Parsing Engine
+// ═══════════════════════════════════════════════════════
+var Parse = {
+  // Robust property value extraction with multiple fallbacks
+  propVal: function(props, name) {
+    if (!props || !props.length) return '';
+    var p = null;
+    for (var i = 0; i < props.length; i++) {
+      var pr = props[i];
+      var pname = pr.name || (Array.isArray(pr) ? pr[0] : null);
+      if (pname === name) { p = pr; break; }
+    }
+    if (!p) return '';
+    if (p.value !== undefined) return p.value;
+    if (p.val !== undefined) return p.val;
+    if (p['#text'] !== undefined) return p['#text'];
+    if (Array.isArray(p) && p.length > 1) return p[1];
+    return '';
+  },
+
+  // Get all values for a property name (multi-value)
+  propVals: function(props, name) {
+    if (!props || !props.length) return [];
+    var vals = [];
+    props.forEach(function(p) {
+      var pname = p.name || (Array.isArray(p) ? p[0] : null);
+      if (pname === name) {
+        var v = p.value !== undefined ? p.value : (p.val !== undefined ? p.val : (Array.isArray(p) ? p[1] : ''));
+        if (v) {
+          U.splitMulti(String(v), ',;|/\\').forEach(function(s) { if (s) vals.push(s); });
+        }
+      }
+    });
+    return vals;
+  },
+
+  // Extract namespace properties into a map
+  extractNS: function(props) {
+    var ns = {};
+    if (!props) return ns;
+    props.forEach(function(p) {
+      var name = p.name || (Array.isArray(p) ? p[0] : null);
+      if (!name) return;
+      var val = p.value !== undefined ? p.value : (p.val !== undefined ? p.val : (Array.isArray(p) ? p[1] : ''));
+      var key = name;
+      if (!ns[key]) ns[key] = [];
+      U.splitMulti(String(val||''), ',;|').forEach(function(v) { if (v) ns[key].push(v); });
+      if (!ns[key].length && val) ns[key].push(String(val));
+    });
+    return ns;
+  },
+
+  // Extract prose text from parts
+  extractParts: function(parts, names) {
+    if (!parts || !parts.length) return '';
+    var texts = [];
+    parts.forEach(function(pt) {
+      if (!names || names.indexOf(pt.name) >= 0) {
+        if (pt.prose) texts.push(pt.prose);
+      }
+      if (pt.parts) {
+        texts.push(Parse.extractParts(pt.parts, names));
+      }
+    });
+    return texts.filter(Boolean).join('\n\n');
+  },
+
+  // Extract parameters
+  extractParams: function(params) {
+    if (!params || !params.length) return [];
+    return params.map(function(p) {
+      var val = '';
+      if (p.values) val = p.values.join(', ');
+      else if (p.constraints) val = p.constraints.map(function(c){ return c.description||c.value||''; }).join('; ');
+      return { id: p.id||'', label: p.label||p.id||'', value: val };
+    });
+  },
+
+  // Walk a control and build enriched object
+  collectControl: function(ctrl, groupId, groupTitle, subgroupId, subgroupTitle, depth) {
+    var props = ctrl.props || [];
+    var parts  = ctrl.parts  || [];
+    var links  = ctrl.links  || [];
+    var params = ctrl.params || [];
+
+    // Namespace map
+    var ns = Parse.extractNS(props);
+
+    // Key property shortcuts
+    var secLevel = Parse.propVal(props, 'sec_level') ||
+                   Parse.propVal(props, 'sec-level') ||
+                   Parse.propVal(props, 'security_level') ||
+                   Parse.propVal(props, 'sicherheitsniveau') ||
+                   ns['sicherheitsniveau'] && ns['sicherheitsniveau'][0] || '';
+    var effort   = Parse.propVal(props, 'effort_level') ||
+                   Parse.propVal(props, 'effort') ||
+                   Parse.propVal(props, 'aufwand') || '';
+    var tags     = Parse.propVals(props, 'tag').concat(Parse.propVals(props, 'tags'));
+    var targets  = Parse.propVals(props, 'target_objects').concat(Parse.propVals(props, 'zielobjekte'));
+    var modal    = Parse.propVal(props, 'modalverb') || Parse.propVal(props, 'requirement-level') || '';
+    var altId    = Parse.propVal(props, 'alt-identifier') || Parse.propVal(props, 'alt_id') || '';
+
+    // Parts
+    var statement = Parse.extractParts(parts, ['statement']) ||
+                    Parse.extractParts(parts, null);
+    var guidance  = Parse.extractParts(parts, ['guidance']);
+
+    // Params
+    var pArr = Parse.extractParams(params);
+    // Substitute params in statement
+    var stmtDisplay = statement;
+    if (pArr.length) {
+      pArr.forEach(function(p) {
+        stmtDisplay = stmtDisplay.replace(
+          new RegExp('\\{\\{\\s*insert\\s*:\\s*param\\s*,\\s*' + p.id.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + '\\s*\\}\\}','gi'),
+          '{{' + p.label + ':' + p.value + '}}'
+        );
+      });
+    }
+
+    // Links
+    var linkArr = links.map(function(l) {
+      return { href: l.href||'', rel: l.rel||'related', text: l.text||'' };
+    });
+
+    var c = {
+      id: ctrl.id || '',
+      uuid: ctrl.uuid || '',
+      title: ctrl.title || '',
+      class: ctrl.class || '',
+      statement: statement,
+      stmtDisplay: stmtDisplay,
+      guidance: guidance,
+      props: props,
+      ns: ns,
+      secLevel: secLevel,
+      effort: effort,
+      tags: tags,
+      targets: targets,
+      modal: modal,
+      altId: altId,
+      links: linkArr,
+      params: pArr,
+      groupId: groupId || '',
+      groupTitle: groupTitle || '',
+      subgroupId: subgroupId || '',
+      subgroupTitle: subgroupTitle || '',
+      depth: depth || 0,
+      raw: ctrl,
+      // Link stats (filled by Link.buildIndex)
+      incomingCount: 0,
+      outgoingCount: 0,
+      brokenCount: 0
+    };
+
+    // Collect enhancement/nested controls
+    var nested = [];
+    if (ctrl.controls) {
+      ctrl.controls.forEach(function(sub) {
+        var n = Parse.collectControl(sub, groupId, groupTitle, subgroupId, subgroupTitle, (depth||0)+1);
+        nested.push(n);
+      });
+    }
+    c._nested = nested;
+    return c;
+  },
+
+  // Walk groups recursively
+  walkGroup: function(group, parentPracticeId, parentPracticeTitle, parentTopicId, parentTopicTitle, depth) {
+    var id = group.id || '';
+    var title = group.title || '';
+    var controls = [];
+
+    // Determine hierarchy level by dot count in ID
+    var dotCount = (id.match(/\./g)||[]).length;
+
+    if (depth === 0 || !parentPracticeId) {
+      // Practice level
+      var practice = { id: id, title: title, topics: [], uuid: group.uuid||'' };
+      Store.practices.push(practice);
+      Store.practiceById[id] = practice;
+
+      if (group.groups) {
+        group.groups.forEach(function(sub) {
+          Parse.walkGroup(sub, id, title, '', '', 1);
+        });
+      }
+      if (group.controls) {
+        group.controls.forEach(function(ctrl) {
+          var c = Parse.collectControl(ctrl, id, title, id, title, 0);
+          Store.controls.push(c);
+          if (c._nested.length) {
+            c._nested.forEach(function(n) { Store.controls.push(n); });
+          }
+        });
+      }
+    } else if (depth === 1) {
+      // Topic / subgroup level
+      var topic = { id: id, title: title, practiceId: parentPracticeId, practiceTitle: parentPracticeTitle, uuid: group.uuid||'' };
+      Store.topicById[id] = topic;
+      var practice2 = Store.practiceById[parentPracticeId];
+      if (practice2) practice2.topics.push(topic);
+
+      if (group.groups) {
+        group.groups.forEach(function(sub) {
+          Parse.walkGroup(sub, parentPracticeId, parentPracticeTitle, id, title, 2);
+        });
+      }
+      if (group.controls) {
+        group.controls.forEach(function(ctrl) {
+          var c = Parse.collectControl(ctrl, parentPracticeId, parentPracticeTitle, id, title, 0);
+          Store.controls.push(c);
+          if (c._nested.length) {
+            c._nested.forEach(function(n) { Store.controls.push(n); });
+          }
+        });
+      }
+    } else {
+      // Deeper nesting — treat as sub-topic controls
+      if (group.controls) {
+        group.controls.forEach(function(ctrl) {
+          var c = Parse.collectControl(ctrl, parentPracticeId, parentPracticeTitle, parentTopicId||id, parentTopicTitle||title, 0);
+          Store.controls.push(c);
+          if (c._nested.length) {
+            c._nested.forEach(function(n) { Store.controls.push(n); });
+          }
+        });
+      }
+      if (group.groups) {
+        group.groups.forEach(function(sub) {
+          Parse.walkGroup(sub, parentPracticeId, parentPracticeTitle, id, title, depth+1);
+        });
+      }
+    }
+
+    return controls;
+  },
+
+  // Build alias map from all controls
+  buildAliasMap: function() {
+    Store.aliasMap = {};
+    Store.controls.forEach(function(c) {
+      // Map by UUID
+      if (c.uuid) Store.aliasMap[c.uuid] = c.id;
+      // Map by alt-identifier
+      if (c.altId) Store.aliasMap[c.altId] = c.id;
+      // Also map own ID
+      Store.aliasMap[c.id] = c.id;
+      // Map any other alias props
+      var aliasNames = ['alt-identifier','alt_id','identifier'];
+      aliasNames.forEach(function(aname) {
+        var v = Parse.propVal(c.props, aname);
+        if (v) Store.aliasMap[v] = c.id;
+      });
+    });
+  },
+
+  // Main entry point
+  processCatalog: function(json) {
+    Store.controls = [];
+    Store.practices = [];
+    Store.practiceById = {};
+    Store.topicById = {};
+    Store.lintResults = null;
+
+    var cat = json.catalog || json;
+    Store.catalog = json;
+
+    // Metadata
+    var meta = cat.metadata || {};
+    Store.catMeta = {
+      title: meta.title || 'OSCAL Catalog',
+      version: meta.version || '',
+      oscalVersion: meta['oscal-version'] || '',
+      lastModified: meta['last-modified'] || ''
+    };
+
+    // Walk groups
+    if (cat.groups) {
+      cat.groups.forEach(function(g) {
+        Parse.walkGroup(g, '', '', '', '', 0);
+      });
+    }
+    // Top-level controls
+    if (cat.controls) {
+      cat.controls.forEach(function(ctrl) {
+        var c = Parse.collectControl(ctrl, '', '', '', '', 0);
+        Store.controls.push(c);
+        if (c._nested.length) {
+          c._nested.forEach(function(n) { Store.controls.push(n); });
+        }
+      });
+    }
+
+    // Build alias map and link index
+    Parse.buildAliasMap();
+    Link.buildIndex();
+
+    // Collect namespace keys
+    var nsSet = {};
+    Store.controls.forEach(function(c) {
+      Object.keys(c.ns).forEach(function(k) { nsSet[k] = true; });
+    });
+    Store.nsKeys = Object.keys(nsSet).sort();
+
+    Toast.show('✓ ' + Store.controls.length + ' Controls geladen: ' + Store.catMeta.title, 'success');
+  }
+};
+
+// ═══════════════════════════════════════════════════════
+// Link — Bidirectional Link Index
+// ═══════════════════════════════════════════════════════
+var Link = {
+  buildIndex: function() {
+    var out = {};  // id → [{rel, tid}]
+    var inc = {};  // id → [{rel, sid}]
+    var broken = [];
+    var idSet = {};
+    Store.controls.forEach(function(c) { idSet[c.id] = true; });
+
+    // Pass 1: outgoing
+    Store.controls.forEach(function(c) {
+      var myOut = [];
+      c.links.forEach(function(l) {
+        if (!l.href) return;
+        var raw = l.href.replace(/^#/,'');
+        var tid = Store.aliasMap[raw] || raw;
+        myOut.push({ rel: l.rel||'related', tid: tid });
+      });
+      out[c.id] = myOut;
+    });
+
+    // Pass 2: incoming + broken detection
+    Object.keys(out).forEach(function(sid) {
+      out[sid].forEach(function(lnk) {
+        var tid = lnk.tid;
+        if (!idSet[tid]) {
+          broken.push({ sid: sid, tid: tid, rel: lnk.rel });
+          return;
+        }
+        if (!inc[tid]) inc[tid] = [];
+        inc[tid].push({ rel: lnk.rel, sid: sid });
+      });
+    });
+
+    Store.linkIndex = { out: out, inc: inc, broken: broken };
+
+    // Update counts on control objects
+    var cidMap = {};
+    Store.controls.forEach(function(c) { cidMap[c.id] = c; });
+    Object.keys(out).forEach(function(id) {
+      if (cidMap[id]) {
+        cidMap[id].outgoingCount = out[id].filter(function(l){ return !!idSet[l.tid]; }).length;
+        cidMap[id].brokenCount   = out[id].filter(function(l){ return !idSet[l.tid]; }).length;
+      }
+    });
+    Object.keys(inc).forEach(function(id) {
+      if (cidMap[id]) cidMap[id].incomingCount = inc[id].length;
+    });
+  },
+
+  resolveHref: function(href) {
+    if (!href) return null;
+    var raw = href.replace(/^#/,'');
+    return Store.aliasMap[raw] || raw;
+  }
+};
+
+// ═══════════════════════════════════════════════════════
+// Filter — Query Engine
+// ═══════════════════════════════════════════════════════
+var Filter = {
+  // Tokenize query string into structured tokens
+  tokenize: function(q) {
+    var tokens = [];
+    var parts = q.trim().split(/\s+/);
+    parts.forEach(function(p) {
+      if (!p) return;
+      var neg = p.charAt(0) === '-';
+      if (neg) p = p.slice(1);
+      var kv = p.match(/^(\w+)([<>=!]+)(.+)$/);
+      if (kv) {
+        tokens.push({ type:'numeric', key: kv[1], op: kv[2], val: parseFloat(kv[3]), neg: neg });
+        return;
+      }
+      var kv2 = p.match(/^(\w+):(.+)$/);
+      if (kv2) {
+        tokens.push({ type:'kv', key: kv2[1].toLowerCase(), val: kv2[2].toLowerCase(), neg: neg });
+        return;
+      }
+      if (p) tokens.push({ type:'text', val: p.toLowerCase(), neg: neg });
+    });
+    return tokens;
+  },
+
+  matchToken: function(c, tok) {
+    var result = false;
+    if (tok.type === 'text') {
+      var hay = (c.id + ' ' + c.title + ' ' + c.statement + ' ' + c.guidance + ' ' +
+                 c.tags.join(' ') + ' ' + c.secLevel).toLowerCase();
+      result = hay.includes(tok.val);
+    } else if (tok.type === 'kv') {
+      var k = tok.key, v = tok.val;
+      if (k === 'id') {
+        // Support wildcards
+        var pattern = v.replace(/\./g,'\\.').replace(/\*/g,'.*');
+        result = new RegExp('^' + pattern + '$', 'i').test(c.id);
+      } else if (k === 'sec' || k === 'security' || k === 'sicherheitsniveau') {
+        result = c.secLevel.toLowerCase().includes(v);
+      } else if (k === 'eff' || k === 'effort' || k === 'aufwand') {
+        result = c.effort.toLowerCase().includes(v);
+      } else if (k === 'tag') {
+        result = c.tags.some(function(t){ return t.toLowerCase().includes(v); });
+      } else if (k === 'class') {
+        result = c.class.toLowerCase().includes(v);
+      } else if (k === 'group') {
+        result = c.groupId.toLowerCase().includes(v) || c.groupTitle.toLowerCase().includes(v);
+      } else if (k === 'rel') {
+        result = c.links.some(function(l){ return l.rel.toLowerCase().includes(v); });
+      } else if (k === 'has') {
+        if (v === 'broken') result = c.brokenCount > 0;
+        else if (v === 'params') result = c.params.length > 0;
+        else if (v === 'statement') result = !!c.statement;
+        else if (v === 'guidance') result = !!c.guidance;
+        else if (v === 'tags') result = c.tags.length > 0;
+        else if (v === 'links') result = c.links.length > 0;
+      } else if (k === 'modal') {
+        result = c.modal.toLowerCase().includes(v);
+      } else {
+        // Generic namespace key search
+        var nsVals = c.ns[k] || c.ns[tok.key] || [];
+        result = nsVals.some(function(nv){ return String(nv).toLowerCase().includes(v); });
+      }
+    } else if (tok.type === 'numeric') {
+      var num = 0;
+      if (tok.key === 'incoming') num = c.incomingCount;
+      else if (tok.key === 'outgoing') num = c.outgoingCount;
+      else if (tok.key === 'broken') num = c.brokenCount;
+      else if (tok.key === 'depth') num = c.depth;
+      var op = tok.op;
+      if (op === '>') result = num > tok.val;
+      else if (op === '>=') result = num >= tok.val;
+      else if (op === '<') result = num < tok.val;
+      else if (op === '<=') result = num <= tok.val;
+      else if (op === '==' || op === '=') result = num === tok.val;
+      else if (op === '!=' || op === '!') result = num !== tok.val;
+    }
+    return tok.neg ? !result : result;
+  },
+
+  match: function(c, tokens) {
+    return tokens.every(function(tok){ return Filter.matchToken(c, tok); });
+  },
+
+  apply: function() {
+    var q = AS.query.trim();
+    if (!q) {
+      AS.filtered = Store.controls.slice();
+      return;
+    }
+    var tokens = Filter.tokenize(q);
+    AS.filtered = Store.controls.filter(function(c){ return Filter.match(c, tokens); });
+  }
+};
+
+// ═══════════════════════════════════════════════════════
+// Lint — Quality Checks
+// ═══════════════════════════════════════════════════════
+var Lint = {
+  run: function() {
+    if (!Store.controls.length) { Toast.show('Kein Katalog geladen', 'warn'); return; }
+    var findings = [];
+    var idCount = {};
+    var idSet = {};
+    Store.controls.forEach(function(c) {
+      idSet[c.id] = true;
+      idCount[c.id] = (idCount[c.id]||0) + 1;
+    });
+
+    // Duplicate IDs
+    Object.keys(idCount).forEach(function(id) {
+      if (idCount[id] > 1) {
+        findings.push({ sev:'error', id: id, msg: 'Doppelte Control-ID ('+idCount[id]+'x)' });
+      }
+    });
+
+    // Broken links
+    if (Store.linkIndex) {
+      Store.linkIndex.broken.forEach(function(b) {
+        findings.push({ sev:'error', id: b.sid, msg: 'Broken Link → ' + b.tid + ' (rel:' + b.rel + ')' });
+      });
+    }
+
+    // Missing statement
+    Store.controls.forEach(function(c) {
+      if (!c.statement && c.depth === 0) {
+        findings.push({ sev:'warn', id: c.id, msg: 'Kein Statement vorhanden' });
+      }
+      if (!c.title) {
+        findings.push({ sev:'error', id: c.id, msg: 'Kein Titel vorhanden' });
+      }
+    });
+
+    // Unreferenced (no incoming, no outgoing)
+    Store.controls.forEach(function(c) {
+      if (c.depth > 0) return; // Skip nested
+      if (c.incomingCount === 0 && c.outgoingCount === 0) {
+        findings.push({ sev:'info', id: c.id, msg: 'Nicht verlinkt (0 ein- und ausgehend)' });
+      }
+    });
+
+    Store.lintResults = findings;
+
+    // Update badge
+    var errs = findings.filter(function(f){ return f.sev==='error'; }).length;
+    var badge = U.get('lint-badge');
+    if (errs > 0) {
+      badge.style.display = '';
+      badge.textContent = errs;
+    } else {
+      badge.style.display = 'none';
+    }
+
+    V.lint();
+    App.nav('lint');
+  }
+};
+
+// ═══════════════════════════════════════════════════════
+// Diff — Catalog Comparison
+// ═══════════════════════════════════════════════════════
+var Diff = {
+  loadB: function(input) {
+    if (!input.files.length) return;
+    var f = input.files[0];
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        var json = JSON.parse(e.target.result);
+        Diff.processB(json);
+      } catch(err) {
+        Toast.show('Parse-Fehler: ' + err.message, 'error');
+      }
+    };
+    reader.readAsText(f);
+  },
+
+  loadUrl: function() {
+    var url = U.get('diff-url-input').value.trim();
+    if (!url) return;
+    url = 'https://' + U.normalizeGHUrl(url.replace(/^https?:\/\//,''));
+    Toast.show('Lade…', 'info');
+    fetch(url).then(function(r){ return r.json(); }).then(function(json){
+      Diff.processB(json);
+    }).catch(function(e){ Toast.show('Fehler: '+e.message, 'error'); });
+  },
+
+  processB: function(json) {
+    // Parse second catalog without modifying main store
+    var savedControls = Store.controls;
+    var savedPractices = Store.practices;
+    var savedPracticeById = Store.practiceById;
+    var savedTopicById = Store.topicById;
+    var savedAliasMap = Store.aliasMap;
+    var savedLinkIndex = Store.linkIndex;
+    var savedCatMeta = Store.catMeta;
+
+    Store.controls = [];
+    Store.practices = [];
+    Store.practiceById = {};
+    Store.topicById = {};
+
+    var cat = json.catalog || json;
+    if (cat.groups) {
+      cat.groups.forEach(function(g){ Parse.walkGroup(g,'','','','',0); });
+    }
+    if (cat.controls) {
+      cat.controls.forEach(function(ctrl) {
+        var c = Parse.collectControl(ctrl,'','','','',0);
+        Store.controls.push(c);
+        c._nested.forEach(function(n){ Store.controls.push(n); });
+      });
+    }
+
+    Store.controlsB = Store.controls.slice();
+
+    // Restore
+    Store.controls = savedControls;
+    Store.practices = savedPractices;
+    Store.practiceById = savedPracticeById;
+    Store.topicById = savedTopicById;
+    Store.aliasMap = savedAliasMap;
+    Store.linkIndex = savedLinkIndex;
+    Store.catMeta = savedCatMeta;
+
+    Toast.show('Zweiter Katalog geladen: ' + Store.controlsB.length + ' Controls', 'success');
+    V.diff();
+    App.nav('diff');
+  },
+
+  compare: function() {
+    var a = Store.controls;
+    var b = Store.controlsB;
+    var aMap = {};
+    var bMap = {};
+    a.forEach(function(c){ aMap[c.id] = c; });
+    b.forEach(function(c){ bMap[c.id] = c; });
+    var added=[], removed=[], changed=[], unchanged=[];
+    b.forEach(function(c) {
+      if (!aMap[c.id]) added.push(c);
+      else if (Diff.hasChanges(aMap[c.id], c)) changed.push({a: aMap[c.id], b: c});
+      else unchanged.push(c);
+    });
+    a.forEach(function(c) {
+      if (!bMap[c.id]) removed.push(c);
+    });
+    return { added:added, removed:removed, changed:changed, unchanged:unchanged };
+  },
+
+  hasChanges: function(a, b) {
+    return a.title !== b.title ||
+           a.statement !== b.statement ||
+           a.guidance !== b.guidance ||
+           a.secLevel !== b.secLevel ||
+           JSON.stringify(a.links) !== JSON.stringify(b.links);
+  }
+};
+
+// ═══════════════════════════════════════════════════════
+// Export
+// ═══════════════════════════════════════════════════════
+var Export = {
+  csv: function(delim) {
+    delim = delim || ';';
+    var cols = ['ID','Titel','Gruppe','Untergruppe','Sicherheitsniveau','Aufwand','Klasse','Tags','Eingehend','Ausgehend'];
+    var rows = [cols.join(delim)];
+    AS.filtered.forEach(function(c) {
+      rows.push([
+        c.id, c.title, c.groupTitle, c.subgroupTitle,
+        c.secLevel, c.effort, c.class, c.tags.join(','),
+        c.incomingCount, c.outgoingCount
+      ].map(function(v){ return '"'+String(v||'').replace(/"/g,'""')+'"'; }).join(delim));
+    });
+    U.download('oscal-export.csv', rows.join('\n'), 'text/csv;charset=utf-8');
+    Toast.show(AS.filtered.length + ' Controls exportiert', 'success');
+  },
+
+  clipCSV: function() {
+    var cols = ['ID','Titel','Sicherheitsniveau','Aufwand'];
+    var rows = [cols.join('\t')];
+    AS.filtered.forEach(function(c) {
+      rows.push([c.id, c.title, c.secLevel, c.effort].join('\t'));
+    });
+    navigator.clipboard.writeText(rows.join('\n')).then(function(){
+      Toast.show('In Zwischenablage kopiert', 'success');
+    });
+  },
+
+  profile: function() {
+    if (!Store.catalog) { Toast.show('Kein Katalog geladen', 'warn'); return; }
+    var ids = AS.filtered.map(function(c){ return c.id; });
+    var profile = {
+      profile: {
+        uuid: U.uid(),
+        metadata: {
+          title: 'Exportiertes Profil — ' + Store.catMeta.title,
+          version: '1.0',
+          'oscal-version': '1.1.3',
+          'last-modified': new Date().toISOString()
+        },
+        imports: [{
+          href: '#catalog',
+          'include-controls': [{ 'with-ids': ids }]
+        }]
+      }
+    };
+    U.download('oscal-profile.json', JSON.stringify(profile, null, 2), 'application/json');
+    Toast.show('OSCAL Profile exportiert (' + ids.length + ' Controls)', 'success');
+  },
+
+  miniCatalog: function() {
+    if (!Store.catalog) { Toast.show('Kein Katalog geladen', 'warn'); return; }
+    var filteredIds = {};
+    AS.filtered.forEach(function(c){ filteredIds[c.id] = true; });
+    var cat = Store.catalog.catalog || Store.catalog;
+
+    function filterGroups(groups) {
+      if (!groups) return undefined;
+      var result = [];
+      groups.forEach(function(g) {
+        var filteredCtrls = (g.controls||[]).filter(function(c){ return filteredIds[c.id]; });
+        var filteredSubs = filterGroups(g.groups);
+        if (filteredCtrls.length || (filteredSubs && filteredSubs.length)) {
+          var ng = Object.assign({}, g);
+          if (filteredCtrls.length) ng.controls = filteredCtrls;
+          else delete ng.controls;
+          if (filteredSubs && filteredSubs.length) ng.groups = filteredSubs;
+          else delete ng.groups;
+          result.push(ng);
+        }
+      });
+      return result;
+    }
+
+    var mini = {
+      catalog: {
+        uuid: U.uid(),
+        metadata: {
+          title: 'Mini-Katalog — ' + Store.catMeta.title,
+          version: '1.0',
+          'oscal-version': '1.1.3',
+          'last-modified': new Date().toISOString()
+        },
+        groups: filterGroups(cat.groups)
+      }
+    };
+    U.download('oscal-mini-catalog.json', JSON.stringify(mini, null, 2), 'application/json');
+    Toast.show('Mini-Katalog exportiert', 'success');
+  },
+
+  markdown: function() {
+    if (!AS.filtered.length) { Toast.show('Keine Controls gefiltert', 'warn'); return; }
+    var lines = ['# ' + Store.catMeta.title, ''];
+    lines.push('**Exportiert:** ' + new Date().toLocaleDateString('de-DE'));
+    lines.push('**Controls:** ' + AS.filtered.length);
+    lines.push('');
+    var lastGroup = '';
+    AS.filtered.forEach(function(c) {
+      if (c.groupTitle !== lastGroup) {
+        lines.push('## ' + c.groupTitle);
+        lines.push('');
+        lastGroup = c.groupTitle;
+      }
+      lines.push('### ' + c.id + ' — ' + c.title);
+      if (c.secLevel) lines.push('**Sicherheitsniveau:** ' + c.secLevel);
+      if (c.effort) lines.push('**Aufwand:** ' + c.effort);
+      if (c.tags.length) lines.push('**Tags:** ' + c.tags.join(', '));
+      if (c.statement) { lines.push(''); lines.push(c.statement); }
+      if (c.guidance) { lines.push(''); lines.push('*Hinweis:* ' + c.guidance); }
+      lines.push('');
+    });
+    U.download('oscal-report.md', lines.join('\n'), 'text/markdown');
+    Toast.show('Markdown Report exportiert', 'success');
+  },
+
+  workspace: function() {
+    var lines = ['# Review-Status', ''];
+    lines.push('**Exportiert:** ' + new Date().toLocaleDateString('de-DE'));
+    lines.push('');
+    var statuses = {};
+    Object.keys(Store.workspace).forEach(function(id) {
+      var ws = Store.workspace[id];
+      if (!statuses[ws.status]) statuses[ws.status] = [];
+      statuses[ws.status].push({ id:id, ws:ws });
+    });
+    ['erledigt','review','in-arbeit','delegiert','offen'].forEach(function(s) {
+      if (!statuses[s]) return;
+      lines.push('## ' + s.charAt(0).toUpperCase() + s.slice(1));
+      statuses[s].forEach(function(item) {
+        lines.push('- **' + item.id + '**' + (item.ws.notes ? ': ' + item.ws.notes : ''));
+      });
+      lines.push('');
+    });
+    U.download('workspace-export.md', lines.join('\n'), 'text/markdown');
+    Toast.show('Workspace exportiert', 'success');
+  }
+};
+
+// ═══════════════════════════════════════════════════════
+// Modal
+// ═══════════════════════════════════════════════════════
+var Modal = {
+  open: function(title, bodyHtml, footerHtml) {
+    U.get('modal-title').textContent = title;
+    U.get('modal-body').innerHTML = bodyHtml;
+    U.get('modal-footer').innerHTML = footerHtml || '<button class="btn btn-secondary btn-sm" onclick="Modal.close()">Schließen</button>';
+    U.get('modal-overlay').classList.add('open');
+  },
+  close: function() {
+    U.get('modal-overlay').classList.remove('open');
+  },
+  showControl: function(id) {
+    var c = Store.controls.filter(function(x){ return x.id === id; })[0];
+    if (!c) return;
+    var li = Store.linkIndex;
+    var incLinks = li && li.inc[id] ? li.inc[id] : [];
+    var outLinks = li && li.out[id] ? li.out[id] : [];
+
+    var html = '';
+
+    // Header info
+    html += '<div class="prop-grid" style="margin-bottom:var(--spacing-md);">';
+    html += '<span class="prop-label">ID</span><span><code style="font-family:var(--font-mono);font-size:12px;">' + U.esc(c.id) + '</code></span>';
+    if (c.uuid) html += '<span class="prop-label">UUID</span><span style="font-size:10px;color:var(--ci-text-muted);">' + U.esc(c.uuid) + '</span>';
+    if (c.class) html += '<span class="prop-label">Klasse</span><span><span class="badge badge-gray">' + U.esc(c.class) + '</span></span>';
+    if (c.secLevel) html += '<span class="prop-label">Sicherheit</span><span>' + Modal.secBadge(c.secLevel) + '</span>';
+    if (c.effort) html += '<span class="prop-label">Aufwand</span><span><span class="badge badge-purple">' + U.esc(c.effort) + '</span></span>';
+    if (c.modal) html += '<span class="prop-label">Modalverb</span><span>' + Modal.modalBadge(c.modal) + '</span>';
+    if (c.groupTitle) html += '<span class="prop-label">Gruppe</span><span>' + U.esc(c.groupTitle) + '</span>';
+    if (c.subgroupTitle && c.subgroupTitle !== c.groupTitle) html += '<span class="prop-label">Untergruppe</span><span>' + U.esc(c.subgroupTitle) + '</span>';
+    html += '</div>';
+
+    // Tags
+    if (c.tags.length) {
+      html += '<div style="margin-bottom:var(--spacing-md);display:flex;gap:4px;flex-wrap:wrap;">';
+      c.tags.forEach(function(t){ html += '<span class="badge badge-blue">' + U.esc(t) + '</span>'; });
+      html += '</div>';
+    }
+
+    // Statement
+    if (c.stmtDisplay) {
+      html += '<div class="modal-section">';
+      html += '<div class="modal-section-title">Statement</div>';
+      html += '<div class="prose-block">' + U.highlightParams(c.stmtDisplay) + '</div>';
+      html += '</div>';
+    }
+
+    // Guidance
+    if (c.guidance) {
+      html += '<div class="modal-section">';
+      html += '<div class="modal-section-title">Hinweise / Guidance</div>';
+      html += '<div class="prose-block">' + U.esc(c.guidance) + '</div>';
+      html += '</div>';
+    }
+
+    // Params
+    if (c.params.length) {
+      html += '<div class="modal-section">';
+      html += '<div class="modal-section-title">Parameter</div>';
+      html += '<div class="prop-grid">';
+      c.params.forEach(function(p) {
+        html += '<span class="prop-label">' + U.esc(p.id) + '</span>';
+        html += '<span><span class="param-label">' + U.esc(p.label) + '</span>';
+        if (p.value) html += ' <span class="param-value">' + U.esc(p.value) + '</span>';
+        html += '</span>';
+      });
+      html += '</div></div>';
+    }
+
+    // Outgoing links
+    if (outLinks.length) {
+      html += '<div class="modal-section">';
+      html += '<div class="modal-section-title">Links (ausgehend, ' + outLinks.length + ')</div>';
+      html += '<div class="link-list">';
+      outLinks.forEach(function(l) {
+        var cls = l.rel === 'required' ? 'badge-warn' : 'badge-blue';
+        html += '<div class="link-item"><span class="badge ' + cls + '">' + U.esc(l.rel) + '</span>';
+        html += '<a onclick="Modal.close();setTimeout(function(){V.scrollToControl(\''+U.esc(l.tid)+'\')},200)">' + U.esc(l.tid) + '</a></div>';
+      });
+      html += '</div></div>';
+    }
+
+    // Incoming links
+    if (incLinks.length) {
+      html += '<div class="modal-section">';
+      html += '<div class="modal-section-title">Eingehend (' + incLinks.length + ')</div>';
+      html += '<div class="link-list">';
+      incLinks.forEach(function(l) {
+        var cls = l.rel === 'required' ? 'badge-warn' : 'badge-blue';
+        html += '<div class="link-item"><span class="badge ' + cls + '">' + U.esc(l.rel) + '</span>';
+        html += '<a onclick="Modal.close();setTimeout(function(){V.scrollToControl(\''+U.esc(l.sid)+'\')},200)">' + U.esc(l.sid) + '</a></div>';
+      });
+      html += '</div></div>';
+    }
+
+    // Review status
+    var ws = Store.getWS(c.id);
+    html += '<div class="modal-section">';
+    html += '<div class="modal-section-title">Review-Status</div>';
+    var statuses = ['offen','in-arbeit','delegiert','review','erledigt'];
+    html += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">';
+    statuses.forEach(function(s) {
+      var active = ws.status === s ? 'style="outline:2px solid var(--ci-color-brand-blue);outline-offset:2px;"' : '';
+      html += '<span class="status-chip status-'+s+'" '+active+' onclick="Modal.setStatus(\''+c.id+'\',\''+s+'\')">' + s + '</span>';
+    });
+    html += '</div>';
+    html += '<input type="text" id="ws-notes-'+c.id+'" placeholder="Notizen…" value="'+U.esc(ws.notes)+'" style="margin-bottom:6px;" oninput="Modal.saveNotes(\''+c.id+'\')">';
+    html += '<input type="url" id="ws-evidence-'+c.id+'" placeholder="Evidenz-URL…" value="'+U.esc(ws.evidence||'')+'" oninput="Modal.saveEvidence(\''+c.id+'\')">';
+    html += '</div>';
+
+    // Raw JSON toggle
+    html += '<div class="modal-section">';
+    html += '<details><summary style="cursor:pointer;font-size:11px;color:var(--ci-text-muted);">Raw JSON</summary>';
+    html += '<pre class="json-pre">' + U.esc(JSON.stringify(c.raw, null, 2)) + '</pre></details>';
+    html += '</div>';
+
+    Modal.open(c.id + ' — ' + c.title, html);
+  },
+
+  setStatus: function(id, status) {
+    Store.getWS(id).status = status;
+    Store.saveWorkspace();
+    // Update UI in modal
+    Modal.showControl(id);
+  },
+  saveNotes: function(id) {
+    var el = U.get('ws-notes-'+id);
+    if (el) Store.getWS(id).notes = el.value;
+    Store.saveWorkspace();
+  },
+  saveEvidence: function(id) {
+    var el = U.get('ws-evidence-'+id);
+    if (el) Store.getWS(id).evidence = el.value;
+    Store.saveWorkspace();
+  },
+
+  secBadge: function(s) {
+    if (!s) return '';
+    var cls = s.toLowerCase().includes('hoch') ? 'badge-red' :
+               s.toLowerCase().includes('erhöht') || s.toLowerCase().includes('erhoht') ? 'badge-warn' : 'badge-blue';
+    return '<span class="badge '+cls+'">' + U.esc(s) + '</span>';
+  },
+  modalBadge: function(s) {
+    if (!s) return '';
+    var cls = s.toLowerCase().includes('muss') ? 'badge-red' :
+               s.toLowerCase().includes('sollte') ? 'badge-warn' : 'badge-green';
+    return '<span class="badge '+cls+'">' + U.esc(s) + '</span>';
+  }
+};
+
+// ═══════════════════════════════════════════════════════
+// V — View Renderers
+// ═══════════════════════════════════════════════════════
+var V = {
+  // Render a control badge cluster
+  badges: function(c) {
+    var h = '';
+    if (c.secLevel) h += Modal.secBadge(c.secLevel) + ' ';
+    if (c.modal) h += Modal.modalBadge(c.modal) + ' ';
+    if (c.effort) h += '<span class="badge badge-purple">' + U.esc(c.effort) + '</span> ';
+    c.tags.slice(0,3).forEach(function(t){ h += '<span class="badge badge-blue">' + U.esc(t) + '</span> '; });
+    return h;
+  },
+
+  // Sort controls
+  sorted: function(arr) {
+    var s = (U.get('sort-by') && U.get('sort-by').value) || AS.sortBy;
+    var a = arr.slice();
+    a.sort(function(x,y) {
+      if (s === 'id-asc') return x.id.localeCompare(y.id, undefined, {numeric:true});
+      if (s === 'id-desc') return y.id.localeCompare(x.id, undefined, {numeric:true});
+      if (s === 'title-asc') return x.title.localeCompare(y.title);
+      if (s === 'title-desc') return y.title.localeCompare(x.title);
+      if (s === 'incoming-desc') return y.incomingCount - x.incomingCount;
+      if (s === 'outgoing-desc') return y.outgoingCount - x.outgoingCount;
+      return x.id.localeCompare(y.id, undefined, {numeric:true});
+    });
+    return a;
+  },
+
+  updateStats: function() {
+    U.get('stat-total').textContent = Store.controls.length + ' Controls';
+    U.get('stat-filtered').textContent = AS.filtered.length + ' gefiltert';
+    var groups = {};
+    AS.filtered.forEach(function(c){ if(c.groupId) groups[c.groupId]=true; });
+    U.get('stat-groups').textContent = Object.keys(groups).length + ' Gruppen';
+    var brokenCount = Store.linkIndex ? Store.linkIndex.broken.length : 0;
+    var bel = U.get('stat-broken');
+    if (brokenCount > 0) {
+      bel.style.display = '';
+      bel.className = 'stat-pill red';
+      bel.textContent = brokenCount + ' Broken Links';
+    } else {
+      bel.style.display = 'none';
+    }
+    V.updateQuickChips();
+  },
+
+  updateQuickChips: function() {
+    var container = U.get('quick-chips');
+    if (!container) return;
+    // Show top security levels and top groups as chips
+    var secCount = {};
+    var groupCount = {};
+    Store.controls.forEach(function(c) {
+      if (c.secLevel) secCount[c.secLevel] = (secCount[c.secLevel]||0)+1;
+      if (c.groupId) groupCount[c.groupId] = (groupCount[c.groupId]||0)+1;
+    });
+    var html = '';
+    // Security level chips
+    Object.keys(secCount).sort().forEach(function(s) {
+      var active = AS.query.includes('sec:'+s.toLowerCase()) ? ' active' : '';
+      html += '<span class="filter-chip'+active+'" onclick="V.toggleChip(\'sec:'+U.esc(s.toLowerCase())+'\')">' + U.esc(s) + ' <small style="opacity:0.6">'+secCount[s]+'</small></span>';
+    });
+    // Group chips (top 6)
+    var groups = Store.practices.slice(0,6);
+    groups.forEach(function(g) {
+      var active = AS.query.includes('group:'+g.id.toLowerCase()) ? ' active' : '';
+      html += '<span class="filter-chip'+active+'" onclick="V.toggleChip(\'group:'+U.esc(g.id)+'\')">' + U.esc(g.id) + '</span>';
+    });
+    container.innerHTML = html;
+  },
+
+  toggleChip: function(token) {
+    var q = AS.query;
+    if (q.includes(token)) {
+      AS.query = q.replace(token,'').replace(/\s+/g,' ').trim();
+    } else {
+      AS.query = (q ? q + ' ' : '') + token;
+    }
+    var inp = U.get('search-input');
+    if (inp) inp.value = AS.query;
+    Filter.apply();
+    V.renderCurrentView();
+    V.updateStats();
+  },
+
+  renderCurrentView: function() {
+    var view = AS.view;
+    if (view === 'dashboard') V.dashboard();
+    else if (view === 'table') V.table();
+    else if (view === 'cards') V.cards();
+    else if (view === 'tree') V.tree();
+    else if (view === 'kanban') V.kanban();
+    else if (view === 'matrix') V.matrix();
+    else if (view === 'graph') Chart.drawGraph();
+    else if (view === 'sunburst') Chart.drawSunburst();
+    else if (view === 'lint') V.lint();
+    else if (view === 'diff') V.diff();
+  },
+
+  scrollToControl: function(id) {
+    // Navigate to tree view and scroll
+    App.nav('tree');
+    setTimeout(function(){
+      var el = document.querySelector('[data-ctrl-id="'+id+'"]');
+      if (el) { el.scrollIntoView({behavior:'smooth', block:'center'}); el.style.background='rgba(0,85,255,0.08)'; setTimeout(function(){ el.style.background=''; },1500); }
+    }, 200);
+  },
+
+  // ── DASHBOARD ─────────────────────────────────────────
+  dashboard: function() {
+    var el = U.get('dashboard-content');
+    if (!Store.controls.length) return; // keep empty state
+
+    var total = Store.controls.length;
+    var brokenCount = Store.linkIndex ? Store.linkIndex.broken.length : 0;
+    var noLinks = Store.controls.filter(function(c){ return c.depth===0 && c.incomingCount===0 && c.outgoingCount===0; }).length;
+    var withGuidance = Store.controls.filter(function(c){ return !!c.guidance; }).length;
+
+    // Sec level distribution
+    var secDist = {};
+    Store.controls.forEach(function(c){ if(c.secLevel) secDist[c.secLevel] = (secDist[c.secLevel]||0)+1; });
+
+    // Group distribution
+    var groupDist = {};
+    Store.practices.forEach(function(p){ groupDist[p.id] = 0; });
+    Store.controls.forEach(function(c){ if(c.groupId) groupDist[c.groupId] = (groupDist[c.groupId]||0)+1; });
+
+    var html = '<div class="stat-grid">';
+    html += '<div class="stat-card" onclick="App.nav(\'table\')"><div class="stat-num">'+total+'</div><div class="stat-label">Controls gesamt</div></div>';
+    html += '<div class="stat-card c2"><div class="stat-num">'+Store.practices.length+'</div><div class="stat-label">Gruppen/Practices</div></div>';
+    html += '<div class="stat-card c3"><div class="stat-num">'+withGuidance+'</div><div class="stat-label">Mit Guidance</div></div>';
+    html += '<div class="stat-card c4" onclick="App.nav(\'lint\')"><div class="stat-num">'+brokenCount+'</div><div class="stat-label">Broken Links</div></div>';
+    html += '</div>';
+
+    // Security level distribution
+    if (Object.keys(secDist).length) {
+      html += '<div class="chart-container" style="margin-bottom:var(--spacing-md);">';
+      html += '<div class="chart-title">Sicherheitsniveau-Verteilung</div>';
+      html += '<div style="display:flex;gap:12px;align-items:flex-end;height:80px;">';
+      var maxSec = Math.max.apply(null, Object.values(secDist));
+      Object.keys(secDist).sort().forEach(function(s) {
+        var pct = Math.round(secDist[s]/maxSec*100);
+        var cls = s.toLowerCase().includes('hoch') ? 'var(--ci-danger)' : s.toLowerCase().includes('erhöht')||s.toLowerCase().includes('erhoht') ? 'var(--ci-warn)' : 'var(--ci-color-brand-blue)';
+        html += '<div style="display:flex;flex-direction:column;align-items:center;gap:4px;">';
+        html += '<span style="font-size:10px;font-weight:700;color:var(--ci-text-muted);">'+secDist[s]+'</span>';
+        html += '<div style="width:40px;background:'+cls+';height:'+pct+'%;border-radius:4px 4px 0 0;min-height:4px;"></div>';
+        html += '<span style="font-size:9px;color:var(--ci-text-muted);text-align:center;max-width:50px;">'+U.esc(s)+'</span>';
+        html += '</div>';
+      });
+      html += '</div></div>';
+    }
+
+    // Group distribution
+    html += '<div class="chart-container" style="margin-bottom:var(--spacing-md);">';
+    html += '<div class="chart-title">Controls pro Gruppe</div>';
+    html += '<div style="display:flex;flex-direction:column;gap:6px;">';
+    var sortedGroups = Object.keys(groupDist).sort(function(a,b){return groupDist[b]-groupDist[a];});
+    var maxG = sortedGroups.length ? groupDist[sortedGroups[0]] : 1;
+    sortedGroups.slice(0,15).forEach(function(gid) {
+      var pct = maxG ? Math.round(groupDist[gid]/maxG*100) : 0;
+      var p = Store.practiceById[gid] || {title: gid};
+      html += '<div style="display:flex;align-items:center;gap:8px;">';
+      html += '<span style="min-width:80px;font-family:var(--font-mono);font-size:10px;color:var(--ci-color-brand-blue);">'+U.esc(gid)+'</span>';
+      html += '<div style="flex:1;background:var(--ci-bg-card-light);border-radius:4px;height:16px;overflow:hidden;">';
+      html += '<div style="background:var(--ci-color-brand-blue);height:100%;width:'+pct+'%;border-radius:4px;transition:width 0.5s;"></div></div>';
+      html += '<span style="font-size:10px;font-weight:700;min-width:30px;text-align:right;">'+groupDist[gid]+'</span>';
+      html += '</div>';
+    });
+    html += '</div></div>';
+
+    // Top hubs
+    var hubs = Store.controls.filter(function(c){return c.depth===0;})
+      .sort(function(a,b){ return (b.incomingCount+b.outgoingCount)-(a.incomingCount+a.outgoingCount); })
+      .slice(0,10);
+    if (hubs.length) {
+      html += '<div class="chart-container">';
+      html += '<div class="chart-title">Top Hubs (nach Verlinkung)</div>';
+      html += '<table class="data-table"><thead><tr><th>ID</th><th>Titel</th><th>Eingehend</th><th>Ausgehend</th><th>Gesamt</th></tr></thead><tbody>';
+      hubs.forEach(function(c) {
+        html += '<tr onclick="Modal.showControl(\''+U.esc(c.id)+'\')" style="cursor:pointer;">';
+        html += '<td><code style="font-family:var(--font-mono);font-size:10px;">'+U.esc(c.id)+'</code></td>';
+        html += '<td>'+U.esc(c.title)+'</td>';
+        html += '<td><span class="badge badge-green">'+c.incomingCount+'</span></td>';
+        html += '<td><span class="badge badge-blue">'+c.outgoingCount+'</span></td>';
+        html += '<td><strong>'+(c.incomingCount+c.outgoingCount)+'</strong></td>';
+        html += '</tr>';
+      });
+      html += '</tbody></table></div>';
+    }
+
+    el.innerHTML = html;
+  },
+
+  // ── TABELLE ──────────────────────────────────────────
+  table: function() {
+    var el = U.get('table-content');
+    var arr = V.sorted(AS.filtered);
+    var groupBy = (U.get('group-by') && U.get('group-by').value) || '';
+    var q = AS.query;
+
+    if (!arr.length) {
+      el.innerHTML = '<div class="empty-state" style="padding:32px;"><div class="empty-state-icon">🔍</div><h3>Keine Controls</h3><p>Suchbegriff anpassen.</p></div>';
+      return;
+    }
+
+    var html = '<table class="data-table"><thead><tr>';
+    html += '<th>ID</th><th>Titel</th><th>Gruppe</th>';
+    html += '<th>Sicherheit</th><th>Aufwand</th><th>Eingehend</th><th>Ausgehend</th>';
+    html += '</tr></thead><tbody>';
+
+    var lastGroup = null;
+    arr.forEach(function(c) {
+      var gVal = groupBy === 'group' ? c.groupTitle :
+                 groupBy === 'secLevel' ? c.secLevel :
+                 groupBy === 'class' ? c.class : '';
+      if (groupBy && gVal !== lastGroup) {
+        html += '<tr class="group-row"><td colspan="7">' + U.esc(gVal||'—') + '</td></tr>';
+        lastGroup = gVal;
+      }
+      var ind = c.depth > 0 ? 'style="padding-left:'+(12+c.depth*16)+'px;"' : '';
+      html += '<tr onclick="Modal.showControl(\''+U.esc(c.id)+'\')" style="cursor:pointer;">';
+      html += '<td '+ind+'><code style="font-family:var(--font-mono);font-size:10px;color:var(--ci-color-brand-blue);">' + U.highlight(c.id, q) + '</code></td>';
+      html += '<td>' + U.highlight(c.title, q) + '</td>';
+      html += '<td style="color:var(--ci-text-muted);font-size:11px;">' + U.esc(c.subgroupTitle||c.groupTitle) + '</td>';
+      html += '<td>' + Modal.secBadge(c.secLevel) + '</td>';
+      html += '<td>' + (c.effort ? '<span class="badge badge-purple">'+U.esc(c.effort)+'</span>' : '') + '</td>';
+      html += '<td>' + (c.incomingCount ? '<span class="badge badge-green">'+c.incomingCount+'</span>' : '<span style="color:var(--ci-text-muted);">0</span>') + '</td>';
+      html += '<td>' + (c.outgoingCount ? '<span class="badge badge-blue">'+c.outgoingCount+'</span>' : '<span style="color:var(--ci-text-muted);">0</span>') + (c.brokenCount ? ' <span class="badge badge-red">!'+c.brokenCount+'</span>' : '') + '</td>';
+      html += '</tr>';
+    });
+    html += '</tbody></table>';
+    el.innerHTML = html;
+  },
+
+  // ── KARTEN ──────────────────────────────────────────
+  cards: function() {
+    var el = U.get('cards-content');
+    var arr = V.sorted(AS.filtered);
+    var q = AS.query;
+    if (!arr.length) {
+      el.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🔍</div><h3>Keine Controls</h3></div>';
+      return;
+    }
+    var html = '';
+    var lastGroup = '';
+    arr.forEach(function(c) {
+      if (c.groupTitle !== lastGroup) {
+        if (lastGroup) html += '</div>'; // close previous grid chunk
+        html += '<div style="grid-column:1/-1;margin-top:'+(lastGroup?'var(--spacing-lg)':'0')+';margin-bottom:8px;">';
+        html += '<h3 style="font-family:var(--font-display);font-size:14px;font-weight:700;color:var(--ci-text-muted);border-bottom:1px solid var(--ci-border);padding-bottom:6px;">'+U.esc(c.groupTitle||'—')+'</h3></div>';
+        lastGroup = c.groupTitle;
+      }
+      var indent = c.depth > 0 ? 'border-left:3px solid rgba(0,85,255,0.2);' : '';
+      html += '<div class="ctrl-card" style="'+indent+'" onclick="Modal.showControl(\''+U.esc(c.id)+'\')">';
+      if (c.groupTitle) html += '<div class="ctrl-card-group">' + U.esc(c.subgroupTitle||c.groupTitle) + '</div>';
+      html += '<div class="ctrl-card-id">' + U.highlight(c.id, q) + '</div>';
+      html += '<div class="ctrl-card-title">' + U.highlight(c.title, q) + '</div>';
+      if (c.statement) html += '<div class="ctrl-card-prose">' + U.esc(c.statement.substring(0,180)) + (c.statement.length>180?'…':'') + '</div>';
+      html += '<div class="ctrl-card-meta">' + V.badges(c) + '</div>';
+      html += '</div>';
+    });
+    el.className = 'ctrl-grid';
+    el.innerHTML = html;
+  },
+
+  // ── BAUM ────────────────────────────────────────────
+  tree: function() {
+    var el = U.get('tree-content');
+    var q = AS.query;
+    if (!Store.practices.length) {
+      el.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🌳</div><h3>Kein Katalog geladen</h3></div>';
+      return;
+    }
+    var filteredIds = {};
+    AS.filtered.forEach(function(c){ filteredIds[c.id] = true; });
+
+    var html = '';
+    Store.practices.forEach(function(practice) {
+      var practiceControls = AS.filtered.filter(function(c){ return c.groupId === practice.id && !c.subgroupId; });
+      var topicControls = practice.topics.map(function(t) {
+        return { topic: t, controls: AS.filtered.filter(function(c){ return c.subgroupId === t.id; }) };
+      }).filter(function(x){ return x.controls.length > 0; });
+
+      var totalCount = practiceControls.length + topicControls.reduce(function(sum,x){ return sum+x.controls.length; },0);
+      if (totalCount === 0) return;
+
+      var pgKey = 'p_' + practice.id;
+      var pgCollapsed = AS.treeState[pgKey] === false ? 'collapsed' : '';
+
+      html += '<div class="tree-group">';
+      html += '<div class="tree-group-hdr '+pgCollapsed+'" onclick="V.treeToggle(\''+pgKey+'\')" data-key="'+pgKey+'">';
+      html += '<span class="tree-arrow">▼</span>';
+      html += U.esc(practice.id) + ' — ' + U.highlight(practice.title, q);
+      html += '<span class="tree-group-count">'+totalCount+'</span>';
+      html += '</div>';
+      html += '<div class="tree-subgroups" id="'+pgKey+'" style="'+(pgCollapsed ? 'display:none' : '')+'">';
+
+      // Direct practice controls
+      if (practiceControls.length) {
+        html += '<div class="tree-items">';
+        V.sorted(practiceControls).forEach(function(c) {
+          html += V.treeItem(c, q, filteredIds);
+        });
+        html += '</div>';
+      }
+
+      // Subgroups (topics)
+      topicControls.forEach(function(tc) {
+        var tKey = 't_' + tc.topic.id;
+        var tCollapsed = AS.treeState[tKey] === false ? 'collapsed' : '';
+        html += '<div class="tree-subgroup">';
+        html += '<div class="tree-subgroup-hdr '+tCollapsed+'" data-key="'+tKey+'" onclick="V.treeToggle(\''+tKey+'\')">';
+        html += '<span class="tree-arrow">▼</span>';
+        html += U.esc(tc.topic.id) + ' — ' + U.highlight(tc.topic.title, q);
+        html += '<span class="tree-group-count">'+tc.controls.length+'</span>';
+        html += '</div>';
+        html += '<div class="tree-items" id="'+tKey+'" style="'+(tCollapsed ? 'display:none' : '')+'">';
+        V.sorted(tc.controls).forEach(function(c) {
+          html += V.treeItem(c, q, filteredIds);
+        });
+        html += '</div></div>';
+      });
+
+      html += '</div></div>';
+    });
+
+    el.innerHTML = html;
+  },
+
+  treeItem: function(c, q, filteredIds) {
+    var ind = c.depth > 0 ? ' nested' : '';
+    return '<div class="tree-item'+ind+'" data-ctrl-id="'+U.esc(c.id)+'" onclick="Modal.showControl(\''+U.esc(c.id)+'\')">' +
+      '<span class="tree-item-id">' + U.highlight(c.id, q) + '</span>' +
+      '<span class="tree-item-title">' + U.highlight(c.title, q) + '</span>' +
+      '<span class="tree-item-badges">' + V.badges(c) + '</span>' +
+      '</div>';
+  },
+
+  treeToggle: function(key) {
+    var el = U.get(key);
+    if (!el) return;
+    var hdr = document.querySelector('[data-key="'+key+'"]') || el.previousElementSibling;
+    if (el.style.display === 'none') {
+      el.style.display = '';
+      if (hdr) hdr.classList.remove('collapsed');
+      AS.treeState[key] = true;
+    } else {
+      el.style.display = 'none';
+      if (hdr) hdr.classList.add('collapsed');
+      AS.treeState[key] = false;
+    }
+  },
+
+  treeExpandAll: function() {
+    document.querySelectorAll('[id^="p_"],[id^="t_"]').forEach(function(el) {
+      el.style.display = '';
+      var hdr = el.previousElementSibling;
+      if (hdr) hdr.classList.remove('collapsed');
+    });
+  },
+
+  treeCollapseAll: function() {
+    document.querySelectorAll('[id^="p_"],[id^="t_"]').forEach(function(el) {
+      el.style.display = 'none';
+      var hdr = el.previousElementSibling;
+      if (hdr) hdr.classList.add('collapsed');
+    });
+  },
+
+  // ── KANBAN ──────────────────────────────────────────
+  kanban: function() {
+    var el = U.get('kanban-content');
+    var fieldSel = U.get('kanban-field');
+    var field = fieldSel ? fieldSel.value : '';
+
+    if (!field || !Store.controls.length) {
+      el.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📋</div><h3>Feld wählen</h3><p>Wähle ein Namespace-Feld für die Kanban-Spalten.</p></div>';
+      return;
+    }
+
+    // Build columns
+    var colMap = {};
+    AS.filtered.forEach(function(c) {
+      var vals = c.ns[field] || (c[field] ? [c[field]] : ['—']);
+      if (!vals.length) vals = ['—'];
+      vals.forEach(function(v) {
+        var k = String(v||'—');
+        if (!colMap[k]) colMap[k] = [];
+        colMap[k].push(c);
+      });
+    });
+
+    var html = '';
+    Object.keys(colMap).sort().forEach(function(colVal) {
+      var cards = colMap[colVal];
+      html += '<div class="kanban-col">';
+      html += '<div class="kanban-col-hdr"><span class="kanban-col-title">' + U.esc(colVal) + '</span><span class="kanban-col-count">'+cards.length+'</span></div>';
+      html += '<div class="kanban-col-body">';
+      V.sorted(cards).forEach(function(c) {
+        html += '<div class="kanban-card" onclick="Modal.showControl(\''+U.esc(c.id)+'\')">';
+        html += '<div class="kanban-card-id">' + U.esc(c.id) + '</div>';
+        html += '<div class="kanban-card-title">' + U.esc(c.title) + '</div>';
+        html += '<div class="kanban-card-meta">' + V.badges(c) + '</div>';
+        html += '</div>';
+      });
+      html += '</div></div>';
+    });
+    el.innerHTML = html || '<div class="empty-state"><div class="empty-state-icon">📋</div><h3>Keine Daten</h3></div>';
+  },
+
+  // ── MATRIX ──────────────────────────────────────────
+  matrix: function() {
+    var el = U.get('matrix-content');
+    var rowField = (U.get('matrix-row') && U.get('matrix-row').value) || '';
+    var colField = (U.get('matrix-col') && U.get('matrix-col').value) || '';
+
+    if (!rowField || !colField) {
+      el.innerHTML = '<div style="text-align:center;padding:24px;color:var(--ci-text-muted);">Zeilen- und Spaltenfeld wählen</div>';
+      return;
+    }
+
+    var getVals = function(c, f) {
+      return c.ns[f] || (c[f] ? [c[f]] : null);
+    };
+
+    var rowSet = {}, colSet = {};
+    AS.filtered.forEach(function(c) {
+      var rv = getVals(c, rowField);
+      var cv = getVals(c, colField);
+      if (rv) rv.forEach(function(v){ rowSet[v] = true; });
+      if (cv) cv.forEach(function(v){ colSet[v] = true; });
+    });
+
+    var rows = Object.keys(rowSet).sort();
+    var cols = Object.keys(colSet).sort();
+
+    if (!rows.length || !cols.length) {
+      el.innerHTML = '<div style="text-align:center;padding:24px;color:var(--ci-text-muted);">Keine Daten für diese Felder</div>';
+      return;
+    }
+
+    // Build matrix
+    var mat = {};
+    rows.forEach(function(r) { mat[r] = {}; cols.forEach(function(c){ mat[r][c] = []; }); });
+    AS.filtered.forEach(function(c) {
+      var rv = getVals(c, rowField);
+      var cv = getVals(c, colField);
+      if (!rv || !cv) return;
+      rv.forEach(function(r) {
+        cv.forEach(function(col) {
+          if (mat[r] && mat[r][col] !== undefined) mat[r][col].push(c.id);
+        });
+      });
+    });
+
+    var html = '<table class="matrix-table"><thead><tr><th class="row-hdr">' + U.esc(rowField) + ' \\ ' + U.esc(colField) + '</th>';
+    cols.forEach(function(c){ html += '<th>' + U.esc(c) + '</th>'; });
+    html += '</tr></thead><tbody>';
+    rows.forEach(function(r) {
+      html += '<tr><th class="row-hdr">' + U.esc(r) + '</th>';
+      cols.forEach(function(c) {
+        var ids = mat[r][c];
+        if (ids.length) {
+          html += '<td class="matrix-cell-has" onclick="V.matrixClick('+JSON.stringify(ids)+')">' + ids.length + '</td>';
+        } else {
+          html += '<td class="matrix-cell-empty">·</td>';
+        }
+      });
+      html += '</tr>';
+    });
+    html += '</tbody></table>';
+    el.innerHTML = html;
+  },
+
+  matrixClick: function(ids) {
+    if (ids.length === 1) { Modal.showControl(ids[0]); return; }
+    var html = '<div style="display:flex;flex-direction:column;gap:6px;">';
+    ids.forEach(function(id) {
+      var c = Store.controls.filter(function(x){ return x.id===id; })[0];
+      if (!c) return;
+      html += '<div class="tree-item" onclick="Modal.close();setTimeout(function(){Modal.showControl(\''+U.esc(id)+'\')},100)" style="cursor:pointer;">';
+      html += '<span class="tree-item-id">'+U.esc(id)+'</span>';
+      html += '<span class="tree-item-title">'+U.esc(c.title)+'</span>';
+      html += '</div>';
+    });
+    html += '</div>';
+    Modal.open(ids.length + ' Controls', html);
+  },
+
+  // ── LINT ────────────────────────────────────────────
+  lint: function() {
+    var el = U.get('lint-content');
+    var findings = Store.lintResults;
+    if (!findings) {
+      el.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🔍</div><h3>Noch keine Prüfung</h3><p>Klicke auf "Prüfung starten".</p></div>';
+      return;
+    }
+    if (!findings.length) {
+      el.innerHTML = '<div class="card"><div class="card-body" style="text-align:center;padding:32px;color:var(--ci-success);"><div style="font-size:32px;margin-bottom:8px;">✓</div><strong>Keine Probleme gefunden</strong></div></div>';
+      return;
+    }
+
+    var errs = findings.filter(function(f){ return f.sev==='error'; });
+    var warns = findings.filter(function(f){ return f.sev==='warn'; });
+    var infos = findings.filter(function(f){ return f.sev==='info'; });
+
+    var html = '<div class="stat-grid" style="margin-bottom:var(--spacing-md);">';
+    html += '<div class="stat-card c4"><div class="stat-num">'+errs.length+'</div><div class="stat-label">Fehler</div></div>';
+    html += '<div class="stat-card c2"><div class="stat-num">'+warns.length+'</div><div class="stat-label">Warnungen</div></div>';
+    html += '<div class="stat-card"><div class="stat-num">'+infos.length+'</div><div class="stat-label">Hinweise</div></div>';
+    html += '</div>';
+    html += '<div class="card"><div class="card-body no-pad">';
+    html += '<table class="data-table lint-table"><thead><tr><th>Schwere</th><th>Control</th><th>Meldung</th></tr></thead><tbody>';
+    findings.forEach(function(f) {
+      html += '<tr onclick="Modal.showControl(\''+U.esc(f.id)+'\')" style="cursor:pointer;">';
+      html += '<td><span class="lint-sev-'+f.sev+'">'+f.sev.toUpperCase()+'</span></td>';
+      html += '<td><code style="font-family:var(--font-mono);font-size:10px;">'+U.esc(f.id)+'</code></td>';
+      html += '<td>'+U.esc(f.msg)+'</td>';
+      html += '</tr>';
+    });
+    html += '</tbody></table></div></div>';
+    el.innerHTML = html;
+  },
+
+  // ── DIFF ────────────────────────────────────────────
+  diff: function() {
+    var el = U.get('diff-content');
+    if (!Store.controlsB.length) return;
+    var result = Diff.compare();
+
+    var html = '<div class="stat-grid" style="margin-bottom:var(--spacing-md);">';
+    html += '<div class="stat-card c5"><div class="stat-num">'+result.added.length+'</div><div class="stat-label">Hinzugefügt</div></div>';
+    html += '<div class="stat-card c4"><div class="stat-num">'+result.removed.length+'</div><div class="stat-label">Entfernt</div></div>';
+    html += '<div class="stat-card c2"><div class="stat-num">'+result.changed.length+'</div><div class="stat-label">Geändert</div></div>';
+    html += '<div class="stat-card"><div class="stat-num">'+result.unchanged.length+'</div><div class="stat-label">Unverändert</div></div>';
+    html += '</div>';
+
+    html += '<div class="card"><div class="card-body no-pad">';
+    html += '<table class="data-table"><thead><tr><th>Status</th><th>ID</th><th>Titel A</th><th>Titel B</th></tr></thead><tbody>';
+
+    result.added.forEach(function(c) {
+      html += '<tr class="diff-row-added"><td><span class="diff-add">+ NEU</span></td><td><code style="font-family:var(--font-mono);font-size:10px;">'+U.esc(c.id)+'</code></td><td style="color:var(--ci-text-muted);">—</td><td>'+U.esc(c.title)+'</td></tr>';
+    });
+    result.removed.forEach(function(c) {
+      html += '<tr class="diff-row-removed"><td><span class="diff-remove">− ENTFERNT</span></td><td><code style="font-family:var(--font-mono);font-size:10px;">'+U.esc(c.id)+'</code></td><td>'+U.esc(c.title)+'</td><td style="color:var(--ci-text-muted);">—</td></tr>';
+    });
+    result.changed.forEach(function(item) {
+      var changes = [];
+      if (item.a.title !== item.b.title) changes.push('Titel');
+      if (item.a.statement !== item.b.statement) changes.push('Statement');
+      if (item.a.guidance !== item.b.guidance) changes.push('Guidance');
+      if (item.a.secLevel !== item.b.secLevel) changes.push('Sicherheitsniveau');
+      html += '<tr class="diff-row-changed"><td><span class="diff-change">~ GEÄNDERT</span><br><small style="font-size:9px;color:var(--ci-text-muted);">'+changes.join(', ')+'</small></td>';
+      html += '<td><code style="font-family:var(--font-mono);font-size:10px;">'+U.esc(item.a.id)+'</code></td>';
+      html += '<td>'+U.esc(item.a.title)+'</td><td>'+U.esc(item.b.title)+'</td></tr>';
+    });
+    html += '</tbody></table></div></div>';
+    el.innerHTML = html;
+  }
+};
+
+// ═══════════════════════════════════════════════════════
+// Chart — D3 Visualizations
+// ═══════════════════════════════════════════════════════
+var Chart = {
+  _graphSim: null,
+
+  drawGraph: function() {
+    if (typeof d3 === 'undefined') {
+      U.get('graph-svg').innerHTML = '<text x="50%" y="50%" text-anchor="middle" fill="#999" font-size="14">D3.js nicht geladen</text>';
+      return;
+    }
+    var limitSel = U.get('graph-limit');
+    var limit = limitSel ? parseInt(limitSel.value) : 200;
+    var nodes = AS.filtered.slice(0, limit);
+    var nodeIds = {};
+    nodes.forEach(function(c){ nodeIds[c.id] = true; });
+
+    var links = [];
+    nodes.forEach(function(c) {
+      (Store.linkIndex && Store.linkIndex.out[c.id] || []).forEach(function(l) {
+        if (nodeIds[l.tid]) {
+          links.push({ source: c.id, target: l.tid, rel: l.rel });
+        }
+      });
+    });
+
+    var svgEl = U.get('graph-svg');
+    var W = svgEl.clientWidth || 800;
+    var H = svgEl.clientHeight || 500;
+
+    d3.select('#graph-svg').selectAll('*').remove();
+    var svg = d3.select('#graph-svg');
+
+    // Defs for arrow markers
+    var defs = svg.append('defs');
+    defs.append('marker').attr('id','arrowRequired').attr('viewBox','0 -5 10 10').attr('refX',18).attr('refY',0)
+      .attr('markerWidth',8).attr('markerHeight',8).attr('orient','auto')
+      .append('path').attr('d','M0,-5L10,0L0,5').attr('fill','#f59e0b');
+    defs.append('marker').attr('id','arrowRelated').attr('viewBox','0 -5 10 10').attr('refX',18).attr('refY',0)
+      .attr('markerWidth',8).attr('markerHeight',8).attr('orient','auto')
+      .append('path').attr('d','M0,-5L10,0L0,5').attr('fill','#0055ff');
+
+    var g = svg.append('g');
+    svg.call(d3.zoom().scaleExtent([0.05, 8]).on('zoom', function(event){ g.attr('transform', event.transform); }));
+
+    var linkEls = g.append('g').selectAll('line').data(links).enter().append('line')
+      .attr('stroke', function(d){ return d.rel === 'required' ? '#f59e0b' : '#0055ff'; })
+      .attr('stroke-width', 1.5)
+      .attr('stroke-opacity', 0.5)
+      .attr('marker-end', function(d){ return 'url(#arrow' + (d.rel==='required'?'Required':'Related') + ')'; });
+
+    var nodeEls = g.append('g').selectAll('g').data(nodes).enter().append('g')
+      .style('cursor','pointer')
+      .on('click', function(event, d){ Modal.showControl(d.id); })
+      .call(d3.drag()
+        .on('start', function(event, d){ if (!event.active) sim.alphaTarget(0.3).restart(); d.fx=d.x; d.fy=d.y; })
+        .on('drag',  function(event, d){ d.fx=event.x; d.fy=event.y; })
+        .on('end',   function(event, d){ if (!event.active) sim.alphaTarget(0); d.fx=null; d.fy=null; }));
+
+    nodeEls.append('circle').attr('r', 6).attr('fill', '#0055ff').attr('fill-opacity', 0.7).attr('stroke','#fff').attr('stroke-width',1.5);
+    nodeEls.append('text').attr('dx', 9).attr('dy', 4).attr('font-size', 9).attr('fill','#1a1a1a').text(function(d){ return d.id; });
+
+    var sim = d3.forceSimulation(nodes)
+      .force('link', d3.forceLink(links).id(function(d){ return d.id; }).distance(80).strength(0.3))
+      .force('charge', d3.forceManyBody().strength(-180))
+      .force('center', d3.forceCenter(W/2, H/2))
+      .force('collision', d3.forceCollide(22))
+      .on('tick', function() {
+        linkEls.attr('x1',function(d){ return d.source.x; }).attr('y1',function(d){ return d.source.y; })
+               .attr('x2',function(d){ return d.target.x; }).attr('y2',function(d){ return d.target.y; });
+        nodeEls.attr('transform',function(d){ return 'translate('+d.x+','+d.y+')'; });
+      });
+
+    Chart._graphSim = sim;
+    AS.graphInitialized = true;
+  },
+
+  graphFit: function() {
+    var svgEl = U.get('graph-svg');
+    var g = d3.select('#graph-svg g');
+    if (!g.node()) return;
+    var bounds = g.node().getBBox();
+    var W = svgEl.clientWidth || 800, H = svgEl.clientHeight || 500;
+    var scale = 0.9 * Math.min(W / bounds.width, H / bounds.height);
+    var tx = W/2 - scale*(bounds.x + bounds.width/2);
+    var ty = H/2 - scale*(bounds.y + bounds.height/2);
+    d3.select('#graph-svg').call(d3.zoom().transform, d3.zoomIdentity.translate(tx, ty).scale(scale));
+  },
+
+  drawSunburst: function() {
+    if (typeof d3 === 'undefined') return;
+    var svgEl = U.get('sunburst-svg');
+    var W = svgEl.clientWidth || 600;
+    var H = 480;
+    var radius = Math.min(W, H) / 2 - 10;
+
+    d3.select('#sunburst-svg').selectAll('*').remove();
+    var svg = d3.select('#sunburst-svg')
+      .attr('width', W).attr('height', H)
+      .append('g').attr('transform','translate('+(W/2)+','+(H/2)+')');
+
+    // Build hierarchy
+    var hierarchy = { name:'root', children: Store.practices.map(function(p) {
+      var count = AS.filtered.filter(function(c){ return c.groupId === p.id; }).length;
+      return { name: p.id, label: p.title, value: count || 1 };
+    }).filter(function(x){ return x.value > 0; }) };
+
+    var root = d3.hierarchy(hierarchy).sum(function(d){ return d.value; });
+    d3.partition().size([2*Math.PI, radius])(root);
+
+    var colors = d3.schemeTableau10;
+    var arc = d3.arc()
+      .startAngle(function(d){ return d.x0; })
+      .endAngle(function(d){ return d.x1; })
+      .innerRadius(function(d){ return d.depth === 0 ? 0 : d.y0; })
+      .outerRadius(function(d){ return d.y1 - 2; });
+
+    svg.selectAll('path').data(root.descendants()).enter().append('path')
+      .attr('d', arc)
+      .attr('fill', function(d) {
+        var ancestor = d;
+        while (ancestor.depth > 1) ancestor = ancestor.parent;
+        return colors[root.children.indexOf(ancestor) % colors.length];
+      })
+      .attr('fill-opacity', function(d){ return d.depth === 0 ? 0 : (1 - d.depth * 0.2); })
+      .attr('stroke','#fff').attr('stroke-width',1)
+      .style('cursor','pointer')
+      .on('click', function(event, d) {
+        if (d.data.name && d.data.name !== 'root') {
+          AS.query = 'group:' + d.data.name;
+          var inp = U.get('search-input');
+          if (inp) inp.value = AS.query;
+          Filter.apply();
+          V.updateStats();
+          App.nav('tree');
+        }
+      })
+      .append('title').text(function(d){ return d.data.label||d.data.name+': '+(d.value||0); });
+
+    // Labels
+    svg.selectAll('text').data(root.descendants().filter(function(d){ return d.depth===1 && (d.x1-d.x0)>0.15; }))
+      .enter().append('text')
+      .attr('transform', function(d) {
+        var angle = (d.x0+d.x1)/2 * 180/Math.PI - 90;
+        var r = (d.y0+d.y1)/2;
+        return 'rotate('+angle+') translate('+r+',0) rotate('+(angle>90?180:0)+')';
+      })
+      .attr('text-anchor','middle').attr('font-size',10).attr('fill','#fff')
+      .text(function(d){ return d.data.name; });
+
+    // Legend
+    var legend = U.get('sunburst-legend');
+    if (legend && root.children) {
+      legend.innerHTML = root.children.map(function(d, i) {
+        return '<div class="legend-item"><div class="legend-dot" style="background:'+colors[i%colors.length]+'"></div><span>'+U.esc(d.data.name)+'</span></div>';
+      }).join('');
+    }
+
+    AS.sunburstInitialized = true;
+  }
+};
+
+// ═══════════════════════════════════════════════════════
+// A — Actions
+// ═══════════════════════════════════════════════════════
+var A = {
+  _searchDebounced: null,
+
+  onSearch: function(val) {
+    AS.query = val;
+    if (!A._searchDebounced) {
+      A._searchDebounced = U.debounce(function(v) {
+        Filter.apply();
+        V.renderCurrentView();
+        V.updateStats();
+      }, 250);
+    }
+    A._searchDebounced(val);
+  },
+
+  onFileInput: function(input) {
+    if (!input.files || !input.files.length) return;
+    var f = input.files[0];
+    A.readFile(f);
+    input.value = '';
+  },
+
+  readFile: function(f) {
+    if (!f.name.endsWith('.json')) { Toast.show('Bitte .json Datei wählen', 'error'); return; }
+    Toast.show('Lade ' + f.name + '…', 'info');
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        var json = JSON.parse(e.target.result);
+        A.loadCatalog(json);
+      } catch(err) {
+        Toast.show('Parse-Fehler: ' + err.message, 'error');
+      }
+    };
+    reader.readAsText(f);
+  },
+
+  promptUrl: function() {
+    var url = prompt('OSCAL Catalog URL (GitHub blob URLs werden automatisch konvertiert):');
+    if (!url) return;
+    url = url.trim();
+    var normalized = U.normalizeGHUrl(url);
+    if (!normalized.startsWith('http')) normalized = 'https://' + normalized;
+    Toast.show('Lade…', 'info');
+    fetch(normalized).then(function(r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    }).then(function(json) {
+      A.loadCatalog(json);
+    }).catch(function(e) {
+      Toast.show('Fehler: ' + e.message, 'error');
+    });
+  },
+
+  loadCatalog: function(json) {
+    AS.query = '';
+    AS.treeState = {};
+    AS.graphInitialized = false;
+    AS.sunburstInitialized = false;
+    var inp = U.get('search-input');
+    if (inp) inp.value = '';
+
+    Parse.processCatalog(json);
+    Filter.apply();
+    App.populateSelects();
+    V.updateStats();
+    V.dashboard();
+    App.nav('dashboard');
+    U.save('lastCatalogTitle', Store.catMeta.title);
+  },
+
+  loadSample: function() {
+    // Try to load the bundled catalog
+    var candidates = [
+      'Grundschutz++-catalog.json',
+      './Grundschutz++-catalog.json'
+    ];
+    var tryNext = function(i) {
+      if (i >= candidates.length) {
+        Toast.show('Keine Beispiel-Datei gefunden. Bitte JSON manuell laden.', 'warn');
+        return;
+      }
+      fetch(candidates[i]).then(function(r) {
+        if (!r.ok) throw new Error('not found');
+        return r.json();
+      }).then(function(json) {
+        A.loadCatalog(json);
+      }).catch(function() {
+        tryNext(i+1);
+      });
+    };
+    tryNext(0);
+  }
+};
+
+// ═══════════════════════════════════════════════════════
+// App — Lifecycle & Router
+// ═══════════════════════════════════════════════════════
+var App = {
+  nav: function(view) {
+    if (AS.view === view && view !== 'lint' && view !== 'diff') return;
+    AS.view = view;
+
+    // Update sidebar active state
+    document.querySelectorAll('.nav-btn').forEach(function(btn) {
+      btn.classList.toggle('active', btn.getAttribute('data-view') === view);
+    });
+
+    // Show/hide views
+    document.querySelectorAll('.view').forEach(function(el) {
+      el.classList.remove('active');
+    });
+    var viewEl = U.get('view-' + view);
+    if (viewEl) viewEl.classList.add('active');
+
+    // Lazy render
+    if (Store.controls.length) {
+      V.renderCurrentView();
+    }
+
+    U.save('lastView', view);
+  },
+
+  toggleSidebar: function() {
+    var sb = U.get('sidebar');
+    sb.classList.toggle('collapsed');
+    U.save('sidebarCollapsed', sb.classList.contains('collapsed'));
+  },
+
+  populateSelects: function() {
+    // Group-by select in table view
+    var gb = U.get('group-by');
+    if (gb) {
+      gb.innerHTML = '<option value="">Nicht gruppieren</option>' +
+        '<option value="group">Gruppe</option>' +
+        '<option value="secLevel">Sicherheitsniveau</option>' +
+        '<option value="class">Klasse</option>';
+    }
+
+    // Kanban field select
+    var kf = U.get('kanban-field');
+    if (kf) {
+      kf.innerHTML = Store.nsKeys.map(function(k) {
+        return '<option value="'+U.esc(k)+'">'+U.esc(k)+'</option>';
+      }).join('');
+      // Also add common fields
+      var commonFields = ['secLevel','effort','class','groupId'];
+      commonFields.forEach(function(f) {
+        kf.innerHTML += '<option value="'+f+'">'+f+'</option>';
+      });
+    }
+
+    // Matrix row/col selects
+    var matFields = Store.nsKeys.concat(['secLevel','effort','class','groupId','subgroupId']);
+    ['matrix-row','matrix-col'].forEach(function(selId) {
+      var sel = U.get(selId);
+      if (!sel) return;
+      sel.innerHTML = '<option value="">— Feld wählen —</option>' +
+        matFields.map(function(k){ return '<option value="'+U.esc(k)+'">'+U.esc(k)+'</option>'; }).join('');
+    });
+  },
+
+  init: function() {
+    Store.init();
+
+    // Restore sidebar state
+    if (U.load('sidebarCollapsed', false)) {
+      U.get('sidebar').classList.add('collapsed');
+    }
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') Modal.close();
+      if (e.key === '/' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+        e.preventDefault();
+        var inp = U.get('search-input');
+        if (inp) inp.focus();
+      }
+    });
+
+    // Drag & drop on body
+    document.addEventListener('dragover', function(e){ e.preventDefault(); });
+    document.addEventListener('drop', function(e) {
+      e.preventDefault();
+      var file = e.dataTransfer.files[0];
+      if (file) A.readFile(file);
+    });
+
+    // Restore last view
+    var lastView = U.load('lastView', 'dashboard');
+    App.nav(lastView);
+  }
+};
+
+// ═══════════════════════════════════════════════════════
+// Start
+// ═══════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', function() {
+  App.init();
+});
+</script>
+</body>
+</html>
