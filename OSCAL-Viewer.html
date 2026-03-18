@@ -229,6 +229,23 @@ mark { background: #fef9c3; color: inherit; border-radius: 2px; padding: 0 1px; 
 .kanban-card-title { font-size: 11px; font-weight: 500; margin-top: 3px; line-height: 1.3; }
 .kanban-card-meta { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
 
+/* MATRIX DETAIL */
+.matrix-detail-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--spacing-md); padding-bottom: var(--spacing-sm); border-bottom: 2px solid var(--ci-color-brand-blue); }
+.matrix-detail-header h3 { font-family: var(--font-display); font-size: 15px; font-weight: 700; }
+.ctrl-detail-card { background: var(--ci-bg-card-white); border: 1px solid var(--ci-border); border-radius: var(--ci-radius-card); padding: var(--spacing-lg); margin-bottom: var(--spacing-md); box-shadow: var(--ci-shadow); }
+.ctrl-detail-card:hover { border-color: var(--ci-border); }
+.ctrl-detail-toprow { display: flex; align-items: flex-start; gap: var(--spacing-md); margin-bottom: var(--spacing-sm); flex-wrap: wrap; }
+.ctrl-detail-id { font-family: var(--font-mono); font-size: 13px; font-weight: 700; color: var(--ci-color-brand-blue); white-space: nowrap; }
+.ctrl-detail-title { font-family: var(--font-display); font-size: 15px; font-weight: 700; flex: 1; line-height: 1.35; }
+.ctrl-detail-badges { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: var(--spacing-sm); }
+.ctrl-detail-section { margin-bottom: var(--spacing-md); }
+.ctrl-detail-section-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: var(--ci-text-muted); margin-bottom: 6px; }
+.ctrl-detail-prose { font-size: 12px; line-height: 1.7; color: var(--ci-text-dark); background: var(--ci-bg-page); padding: var(--spacing-sm) var(--spacing-md); border-radius: var(--ci-radius-input); border-left: 3px solid var(--ci-color-brand-blue); white-space: pre-wrap; }
+.ctrl-detail-prose.guidance { border-left-color: var(--ci-success); background: rgba(16,185,129,0.04); }
+.ctrl-detail-links { display: flex; gap: 6px; flex-wrap: wrap; }
+.ctrl-detail-open-btn { font-size: 10px; color: var(--ci-text-muted); cursor: pointer; padding: 3px 8px; border-radius: 6px; border: 1px solid var(--ci-border); background: none; transition: all 0.15s; }
+.ctrl-detail-open-btn:hover { border-color: var(--ci-color-brand-blue); color: var(--ci-color-brand-blue); }
+
 /* MATRIX */
 .matrix-wrap { overflow: auto; }
 .matrix-table { border-collapse: collapse; font-size: 11px; }
@@ -549,6 +566,7 @@ mark { background: #fef9c3; color: inherit; border-radius: 2px; padding: 0 1px; 
           </div>
         </div>
         <div class="chart-container"><div id="matrix-content" class="matrix-wrap"></div></div>
+        <div id="matrix-detail" style="display:none;margin-top:var(--spacing-md);"></div>
       </div>
 
       <!-- GRAPH -->
@@ -2481,7 +2499,7 @@ var V = {
       cols.forEach(function(c) {
         var ids = mat[r][c];
         if (ids.length) {
-          html += '<td class="matrix-cell-has" onclick="V.matrixClick('+JSON.stringify(ids)+')">' + ids.length + '</td>';
+          html += '<td class="matrix-cell-has" onclick="document.querySelectorAll(\'.matrix-cell-has\').forEach(function(e){e.style.background=\'\';e.style.color=\'\'});this.style.background=\'rgba(0,85,255,0.15)\';this.style.color=\'var(--ci-color-brand-dark)\';V.matrixClick('+JSON.stringify(ids)+',\''+U.esc(r)+'\',\''+U.esc(c)+'\')" style="transition:background 0.15s;">' + ids.length + '</td>';
         } else {
           html += '<td class="matrix-cell-empty">·</td>';
         }
@@ -2492,19 +2510,106 @@ var V = {
     el.innerHTML = html;
   },
 
-  matrixClick: function(ids) {
-    if (ids.length === 1) { Modal.showControl(ids[0]); return; }
-    var html = '<div style="display:flex;flex-direction:column;gap:6px;">';
-    ids.forEach(function(id) {
-      var c = Store.controls.filter(function(x){ return x.id===id; })[0];
-      if (!c) return;
-      html += '<div class="tree-item" onclick="Modal.close();setTimeout(function(){Modal.showControl(\''+U.esc(id)+'\')},100)" style="cursor:pointer;">';
-      html += '<span class="tree-item-id">'+U.esc(id)+'</span>';
-      html += '<span class="tree-item-title">'+U.esc(c.title)+'</span>';
-      html += '</div>';
+  matrixClick: function(ids, rowVal, colVal) {
+    var panel = U.get('matrix-detail');
+    if (!panel) return;
+
+    // Highlight active cell
+    document.querySelectorAll('.matrix-cell-has').forEach(function(el) {
+      el.style.background = '';
     });
+    if (V._matrixActiveCell) V._matrixActiveCell.style.background = '';
+
+    var cidMap = {};
+    Store.controls.forEach(function(c) { cidMap[c.id] = c; });
+    var controls = ids.map(function(id){ return cidMap[id]; }).filter(Boolean);
+    if (!controls.length) { panel.style.display = 'none'; return; }
+
+    var label = (rowVal && colVal) ? (rowVal + ' × ' + colVal) : (ids.length + ' Anforderungen');
+    var html = '<div class="matrix-detail-header">';
+    html += '<h3>' + U.esc(label) + ' <span style="font-size:12px;font-weight:400;color:var(--ci-text-muted);">— ' + controls.length + ' Anforderung' + (controls.length !== 1 ? 'en' : '') + '</span></h3>';
+    html += '<button class="ctrl-detail-open-btn" onclick="U.get(\'matrix-detail\').style.display=\'none\'">✕ Schließen</button>';
     html += '</div>';
-    Modal.open(ids.length + ' Controls', html);
+
+    controls.forEach(function(c) {
+      var li = Store.linkIndex;
+      var outLinks = li && li.out[c.id] ? li.out[c.id] : [];
+      var incLinks = li && li.inc[c.id] ? li.inc[c.id] : [];
+
+      html += '<div class="ctrl-detail-card">';
+
+      // Top row: ID + title + open-in-modal button
+      html += '<div class="ctrl-detail-toprow">';
+      html += '<span class="ctrl-detail-id">' + U.esc(c.id) + '</span>';
+      html += '<span class="ctrl-detail-title">' + U.esc(c.title) + '</span>';
+      html += '<button class="ctrl-detail-open-btn" onclick="Modal.showControl(\''+U.esc(c.id)+'\')">Detail ↗</button>';
+      html += '</div>';
+
+      // Badges
+      html += '<div class="ctrl-detail-badges">';
+      if (c.secLevel) html += Modal.secBadge(c.secLevel);
+      if (c.modal)    html += Modal.modalBadge(c.modal);
+      if (c.effort)   html += '<span class="badge badge-purple">' + U.esc(c.effort) + '</span>';
+      if (c.labelCode) html += '<span class="badge badge-gray">' + U.esc(c.labelCode) + '</span>';
+      c.tags.slice(0,4).forEach(function(t){ html += '<span class="badge badge-blue">' + U.esc(t) + '</span>'; });
+      if (c.handlungsworte.length) {
+        c.handlungsworte.slice(0,3).forEach(function(hw){ html += '<span class="badge badge-warn">' + U.esc(hw) + '</span>'; });
+      }
+      html += '</div>';
+
+      // Kontext: Gruppe / Untergruppe
+      if (c.groupTitle || c.subgroupTitle) {
+        html += '<div style="font-size:10px;color:var(--ci-text-muted);margin-bottom:var(--spacing-sm);">';
+        html += U.esc(c.groupTitle);
+        if (c.subgroupTitle && c.subgroupTitle !== c.groupTitle) html += ' › ' + U.esc(c.subgroupTitle);
+        html += '</div>';
+      }
+
+      // Statement
+      if (c.stmtDisplay) {
+        html += '<div class="ctrl-detail-section">';
+        html += '<div class="ctrl-detail-section-label">Anforderung (Statement)</div>';
+        html += '<div class="ctrl-detail-prose">' + U.highlightParams(c.stmtDisplay) + '</div>';
+        html += '</div>';
+      }
+
+      // Guidance
+      if (c.guidance) {
+        html += '<div class="ctrl-detail-section">';
+        html += '<div class="ctrl-detail-section-label">Hinweise / Guidance</div>';
+        html += '<div class="ctrl-detail-prose guidance">' + U.esc(c.guidance) + '</div>';
+        html += '</div>';
+      }
+
+      // Ergebnis
+      if (c.ergebnis) {
+        html += '<div class="ctrl-detail-section">';
+        html += '<div class="ctrl-detail-section-label">Erwartetes Ergebnis</div>';
+        html += '<div class="ctrl-detail-prose" style="border-left-color:#8b5cf6;">' + U.esc(c.ergebnis) + '</div>';
+        html += '</div>';
+      }
+
+      // Links
+      if (outLinks.length || incLinks.length) {
+        html += '<div class="ctrl-detail-section">';
+        html += '<div class="ctrl-detail-section-label">Beziehungen</div>';
+        html += '<div class="ctrl-detail-links">';
+        outLinks.slice(0,8).forEach(function(l) {
+          var cls = l.rel === 'required' ? 'badge-warn' : 'badge-blue';
+          html += '<span class="badge '+cls+'" style="cursor:pointer;" onclick="Modal.showControl(\''+U.esc(l.tid)+'\')" title="'+U.esc(l.rel)+'">→ '+U.esc(l.tid)+'</span>';
+        });
+        incLinks.slice(0,6).forEach(function(l) {
+          html += '<span class="badge badge-gray" style="cursor:pointer;" onclick="Modal.showControl(\''+U.esc(l.sid)+'\')" title="eingehend: '+U.esc(l.rel)+'">← '+U.esc(l.sid)+'</span>';
+        });
+        html += '</div></div>';
+      }
+
+      html += '</div>'; // ctrl-detail-card
+    });
+
+    panel.innerHTML = html;
+    panel.style.display = 'block';
+    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
   },
 
   // ── LINT ────────────────────────────────────────────
