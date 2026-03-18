@@ -92,11 +92,35 @@ mark { background: #fef9c3; color: inherit; border-radius: 2px; padding: 0 1px; 
 .search-wrap input { padding-left: 32px; font-size: 12px; }
 .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--ci-text-muted); pointer-events: none; }
 .topbar-actions { display: flex; align-items: center; gap: 6px; margin-left: auto; }
-.stat-strip { display: flex; align-items: center; gap: 8px; padding: 6px var(--spacing-lg); background: var(--ci-bg-card-white); border-bottom: 1px solid var(--ci-border); font-size: 11px; color: var(--ci-text-muted); flex-shrink: 0; flex-wrap: wrap; }
+.stat-strip { display: flex; align-items: center; gap: 6px; padding: 5px var(--spacing-lg); background: var(--ci-bg-card-white); border-bottom: 1px solid var(--ci-border); font-size: 11px; color: var(--ci-text-muted); flex-shrink: 0; flex-wrap: wrap; }
 .stat-pill { background: var(--ci-bg-card-light); padding: 2px 10px; border-radius: 12px; font-weight: 600; color: var(--ci-text-dark); }
 .stat-pill.blue { background: rgba(0,85,255,0.1); color: var(--ci-color-brand-blue); }
 .stat-pill.green { background: rgba(16,185,129,0.1); color: var(--ci-success); }
 .stat-pill.red { background: rgba(239,68,68,0.1); color: var(--ci-danger); }
+.stat-sep { width: 1px; height: 16px; background: var(--ci-border); flex-shrink: 0; }
+.filter-chip { border: 1px solid var(--ci-border); background: var(--ci-bg-card-white); color: var(--ci-text-muted); transition: all 0.15s; }
+.filter-chip:hover { border-color: var(--ci-color-brand-blue); color: var(--ci-color-brand-blue); box-shadow: 0 0 0 2px rgba(0,85,255,0.08); }
+.filter-chip.active { background: rgba(0,85,255,0.08); border-color: var(--ci-color-brand-blue); color: var(--ci-color-brand-blue); }
+
+/* TYPEAHEAD */
+.search-wrap { position: relative; }
+.search-dropdown { position: absolute; top: calc(100% + 4px); left: 0; right: 0; min-width: 360px; background: var(--ci-bg-card-white); border: 1px solid var(--ci-border); border-radius: var(--ci-radius-input); box-shadow: var(--ci-shadow-lg); z-index: 500; max-height: 320px; overflow-y: auto; display: none; }
+.search-dropdown.open { display: block; }
+.search-result-item { display: flex; align-items: center; gap: 8px; padding: 8px 12px; cursor: pointer; border-bottom: 1px solid var(--ci-border); font-size: 12px; }
+.search-result-item:last-child { border-bottom: none; }
+.search-result-item:hover { background: var(--ci-bg-page); }
+.search-result-item.active-result { background: rgba(0,85,255,0.05); }
+.search-result-type { font-size: 9px; font-weight: 700; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; background: var(--ci-bg-card-light); color: var(--ci-text-muted); white-space: nowrap; flex-shrink: 0; }
+.search-result-type.srt-id { background: rgba(0,85,255,0.1); color: var(--ci-color-brand-blue); }
+.search-result-type.srt-titel { background: rgba(139,92,246,0.1); color: #7c3aed; }
+.search-result-type.srt-modal { background: rgba(239,68,68,0.1); color: var(--ci-danger); }
+.search-result-type.srt-tag { background: rgba(16,185,129,0.1); color: var(--ci-success); }
+.search-result-type.srt-hw { background: rgba(245,158,11,0.1); color: var(--ci-warn); }
+.search-result-type.srt-ziel { background: rgba(91,33,182,0.1); color: #5b21b6; }
+.search-result-type.srt-stmt { background: rgba(6,182,212,0.1); color: #0891b2; }
+.search-result-label { flex: 1; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.search-result-sub { font-size: 10px; color: var(--ci-text-muted); white-space: nowrap; flex-shrink: 0; }
+.search-no-results { padding: 12px; text-align: center; color: var(--ci-text-muted); font-size: 12px; }
 .page-scroll { flex: 1; overflow-y: auto; padding: var(--spacing-lg); }
 
 /* VIEWS */
@@ -403,7 +427,8 @@ mark { background: #fef9c3; color: inherit; border-radius: 2px; padding: 0 1px; 
       <div class="topbar-sep"></div>
       <div class="search-wrap">
         <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-        <input type="text" id="search-input" placeholder="Suche: id:GC.2.* sec:hoch incoming>=3 …" oninput="A.onSearch(this.value)">
+        <input type="text" id="search-input" placeholder="Suche oder tippen: verankern, hw:überprüfen, modal:MUSS …" oninput="A.onSearch(this.value)" onfocus="Typeahead.show(this.value)" autocomplete="off">
+        <div class="search-dropdown" id="search-dropdown"></div>
       </div>
       <div class="topbar-actions">
         <label class="btn btn-secondary btn-sm" style="cursor:pointer">
@@ -427,7 +452,8 @@ mark { background: #fef9c3; color: inherit; border-radius: 2px; padding: 0 1px; 
       <span id="stat-filtered" class="stat-pill">0 gefiltert</span>
       <span id="stat-groups" class="stat-pill">0 Gruppen</span>
       <span id="stat-broken" class="stat-pill" style="display:none"></span>
-      <div id="quick-chips" class="filter-chips" style="flex:1;margin-left:4px;"></div>
+      <div class="stat-sep" id="stat-sep-chips" style="display:none"></div>
+      <div id="quick-chips" class="filter-chips" style="margin-left:0;"></div>
       <button class="btn btn-secondary btn-sm" id="filter-btn" onclick="V.toggleFilterPanel()" style="margin-left:auto;flex-shrink:0;">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
         Filter
@@ -944,6 +970,13 @@ var Parse = {
     var targets  = Parse.propVals(props, 'target_objects').concat(Parse.propVals(props, 'zielobjekte'));
     var modal    = Parse.propVal(props, 'modalverb') || Parse.propVal(props, 'requirement-level') || '';
     var altId    = Parse.propVal(props, 'alt-identifier') || Parse.propVal(props, 'alt_id') || '';
+    // Additional Grundschutz++ properties
+    var hwRaw    = Parse.propVal(props, 'handlungsworte') || Parse.propVal(props, 'handlungswort') || '';
+    var handlungsworte = hwRaw ? U.splitMulti(hwRaw, ',;|') : [];
+    var documentation  = Parse.propVals(props, 'documentation');
+    var labelCode      = Parse.propVal(props, 'label') || '';
+    var ergebnis       = Parse.propVal(props, 'ergebnis') || '';
+    var praezisierung  = Parse.propVal(props, 'präzisierung') || Parse.propVal(props, 'praezisierung') || '';
 
     // Parts
     var statement = Parse.extractParts(parts, ['statement']) ||
@@ -984,6 +1017,11 @@ var Parse = {
       targets: targets,
       modal: modal,
       altId: altId,
+      handlungsworte: handlungsworte,
+      documentation: documentation,
+      labelCode: labelCode,
+      ergebnis: ergebnis,
+      praezisierung: praezisierung,
       links: linkArr,
       params: pArr,
       groupId: groupId || '',
@@ -1269,8 +1307,18 @@ var Filter = {
         else if (v === 'guidance') result = !!c.guidance;
         else if (v === 'tags') result = c.tags.length > 0;
         else if (v === 'links') result = c.links.length > 0;
-      } else if (k === 'modal') {
+      } else if (k === 'modal' || k === 'modalverb' || k === 'mv') {
         result = c.modal.toLowerCase().includes(v);
+      } else if (k === 'hw' || k === 'handlung' || k === 'handlungswort' || k === 'handlungsworte') {
+        result = c.handlungsworte.some(function(h){ return h.toLowerCase().includes(v); });
+      } else if (k === 'label' || k === 'lbl') {
+        result = c.labelCode.toLowerCase().includes(v);
+      } else if (k === 'target' || k === 'ziel' || k === 'zielobjekt') {
+        result = c.targets.some(function(t){ return t.toLowerCase().includes(v); });
+      } else if (k === 'doc' || k === 'dokumentation' || k === 'documentation') {
+        result = c.documentation.some(function(d){ return d.toLowerCase().includes(v); });
+      } else if (k === 'ergebnis' || k === 'result') {
+        result = c.ergebnis.toLowerCase().includes(v);
       } else {
         // Generic namespace key search
         var nsVals = c.ns[k] || c.ns[tok.key] || [];
@@ -1927,6 +1975,9 @@ var V = {
       parts.push('<span class="filter-chip'+active+'" onclick="V.toggleChip(\''+U.esc(token)+'\')">' + U.esc(s) + ' <small style="opacity:0.6">'+secCount[s]+'</small></span>');
     });
     container.innerHTML = parts.join('');
+    // Show separator only if chips are visible
+    var sep = U.get('stat-sep-chips');
+    if (sep) sep.style.display = parts.length ? '' : 'none';
   },
 
   toggleFilterPanel: function() {
@@ -1943,12 +1994,16 @@ var V = {
     var inner = U.get('filter-panel-inner');
     if (!inner || !Store.controls.length) return;
     var dims = [
-      { key:'group', label:'Gruppe', vals:function(c){ return c.groupId ? [c.groupId] : []; }, token:function(v){ return 'group:'+v; } },
-      { key:'sec',   label:'Sicherheitsniveau', vals:function(c){ return c.secLevel?[c.secLevel]:[]; }, token:function(v){ return 'sec:'+v.toLowerCase().replace(/\s+/g,'-'); } },
-      { key:'effort',label:'Aufwand', vals:function(c){ return c.effort?[c.effort]:[]; }, token:function(v){ return 'eff:'+v.toLowerCase(); } },
-      { key:'modal', label:'Modalverb', vals:function(c){ return c.modal?[c.modal]:[]; }, token:function(v){ return 'modal:'+v.toLowerCase(); } },
-      { key:'class', label:'Klasse', vals:function(c){ return c.class?[c.class]:[]; }, token:function(v){ return 'class:'+v.toLowerCase(); } },
-      { key:'tag',   label:'Tags', vals:function(c){ return c.tags.slice(0,20); }, token:function(v){ return 'tag:'+v.toLowerCase(); } }
+      { key:'group',  label:'Gruppe',            vals:function(c){ return c.groupId?[c.groupId+' — '+(c.groupTitle||c.groupId)]:[];}, token:function(v){ return 'group:'+v.split(' ')[0]; } },
+      { key:'sec',    label:'Sicherheitsniveau',  vals:function(c){ return c.secLevel?[c.secLevel]:[]; }, token:function(v){ return 'sec:'+v.toLowerCase().replace(/\s+/g,'-'); } },
+      { key:'modal',  label:'Modalverb',          vals:function(c){ return c.modal?[c.modal]:[]; }, token:function(v){ return 'modal:'+v.toLowerCase(); } },
+      { key:'effort', label:'Aufwandsstufe',      vals:function(c){ return c.effort?[c.effort]:[]; }, token:function(v){ return 'eff:'+v.toLowerCase(); } },
+      { key:'hw',     label:'Handlungsworte',     vals:function(c){ return c.handlungsworte.slice(0,5); }, token:function(v){ return 'hw:'+v.toLowerCase(); } },
+      { key:'label',  label:'Label',              vals:function(c){ return c.labelCode?[c.labelCode]:[]; }, token:function(v){ return 'label:'+v.toLowerCase(); } },
+      { key:'target', label:'Zielobjekte',        vals:function(c){ return c.targets.slice(0,10); }, token:function(v){ return 'target:'+v.toLowerCase(); } },
+      { key:'doc',    label:'Dokumentation',      vals:function(c){ return c.documentation.slice(0,10); }, token:function(v){ return 'doc:'+v.toLowerCase(); } },
+      { key:'tag',    label:'Tags',               vals:function(c){ return c.tags.slice(0,20); }, token:function(v){ return 'tag:'+v.toLowerCase(); } },
+      { key:'class',  label:'Klasse',             vals:function(c){ return c.class?[c.class]:[]; }, token:function(v){ return 'class:'+v.toLowerCase(); } }
     ];
     var parts = [];
     dims.forEach(function(dim) {
@@ -2689,11 +2744,179 @@ var Chart = {
 // ═══════════════════════════════════════════════════════
 // A — Actions
 // ═══════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════
+// Typeahead — Live-Suche mit Typ-Badges
+// ═══════════════════════════════════════════════════════
+var Typeahead = {
+  _t: null,
+  _active: -1,
+
+  show: function(q) {
+    Typeahead.search(q);
+  },
+
+  search: function(q) {
+    clearTimeout(Typeahead._t);
+    if (!q || q.length < 2 || !Store.controls.length) {
+      Typeahead.close();
+      return;
+    }
+    Typeahead._t = setTimeout(function() {
+      var results = Typeahead.find(q);
+      Typeahead.render(results, q);
+    }, 150);
+  },
+
+  find: function(q) {
+    var ql = q.toLowerCase();
+    var results = [];
+
+    // Detect key:value patterns — suggest completing
+    var kvMatch = q.match(/^(\w+):(.*)$/);
+    if (kvMatch) {
+      // Already a key:value — just do normal filter, no dropdown needed
+      Typeahead.close();
+      return [];
+    }
+
+    var seen = {};
+    var add = function(type, cls, id, label, sub) {
+      var k = type + ':' + id;
+      if (seen[k]) return;
+      seen[k] = true;
+      results.push({ type:type, cls:cls, id:id, label:label, sub:sub||'' });
+    };
+
+    Store.controls.forEach(function(c) {
+      if (results.length >= 20) return;
+      // ID match
+      if (c.id.toLowerCase().includes(ql)) {
+        add('ID', 'srt-id', c.id, c.id, c.title.substring(0,50));
+      }
+      // Title match
+      if (c.title.toLowerCase().includes(ql)) {
+        add('Titel', 'srt-titel', c.id, c.title.substring(0,60), c.id);
+      }
+    });
+
+    // Statement matches (max 5)
+    var stmtHits = 0;
+    Store.controls.forEach(function(c) {
+      if (stmtHits >= 5 || results.length >= 20) return;
+      if (c.statement && c.statement.toLowerCase().includes(ql)) {
+        var idx = c.statement.toLowerCase().indexOf(ql);
+        var snippet = c.statement.substring(Math.max(0,idx-20), idx+40).trim();
+        add('Statement', 'srt-stmt', c.id, '…'+snippet+'…', c.id);
+        stmtHits++;
+      }
+    });
+
+    // Modalverb suggestions
+    var modalSeen = {};
+    Store.controls.forEach(function(c) {
+      if (results.length >= 20 || !c.modal) return;
+      if (c.modal.toLowerCase().includes(ql) && !modalSeen[c.modal]) {
+        modalSeen[c.modal] = true;
+        results.push({ type:'Modalverb', cls:'srt-modal', id:'__modal__', label:c.modal, sub:'modal:'+c.modal.toLowerCase()+' als Filter', isFilter:true, token:'modal:'+c.modal.toLowerCase() });
+      }
+    });
+
+    // Handlungsworte suggestions
+    var hwSeen = {};
+    Store.controls.forEach(function(c) {
+      if (results.length >= 20) return;
+      c.handlungsworte.forEach(function(hw) {
+        if (hw.toLowerCase().includes(ql) && !hwSeen[hw]) {
+          hwSeen[hw] = true;
+          results.push({ type:'Handlung', cls:'srt-hw', id:'__hw__', label:hw, sub:'hw:'+hw.toLowerCase()+' als Filter', isFilter:true, token:'hw:'+hw.toLowerCase() });
+        }
+      });
+    });
+
+    // Tag suggestions
+    var tagSeen = {};
+    Store.controls.forEach(function(c) {
+      if (results.length >= 20) return;
+      c.tags.forEach(function(t) {
+        if (t.toLowerCase().includes(ql) && !tagSeen[t]) {
+          tagSeen[t] = true;
+          results.push({ type:'Tag', cls:'srt-tag', id:'__tag__', label:t, sub:'tag:'+t.toLowerCase()+' als Filter', isFilter:true, token:'tag:'+t.toLowerCase() });
+        }
+      });
+    });
+
+    // Zielobjekte suggestions
+    var zielSeen = {};
+    Store.controls.forEach(function(c) {
+      if (results.length >= 20) return;
+      c.targets.forEach(function(z) {
+        if (z.toLowerCase().includes(ql) && !zielSeen[z]) {
+          zielSeen[z] = true;
+          results.push({ type:'Zielobjekt', cls:'srt-ziel', id:'__ziel__', label:z, sub:'target:'+z.toLowerCase()+' als Filter', isFilter:true, token:'target:'+z.toLowerCase() });
+        }
+      });
+    });
+
+    return results.slice(0, 18);
+  },
+
+  render: function(results, q) {
+    var el = U.get('search-dropdown');
+    if (!el) return;
+    if (!results.length) {
+      el.innerHTML = '<div class="search-no-results">Keine Treffer für "'+U.esc(q)+'" — Volltextsuche läuft</div>';
+      el.classList.add('open');
+      return;
+    }
+    Typeahead._active = -1;
+    var items = results.map(function(r, i) {
+      var onclick = r.isFilter
+        ? 'Typeahead.applyToken(\''+U.esc(r.token)+'\')'
+        : 'Typeahead.selectControl(\''+U.esc(r.id)+'\')';
+      return '<div class="search-result-item" data-idx="'+i+'" onclick="'+onclick+'">' +
+        '<span class="search-result-type '+r.cls+'">'+U.esc(r.type)+'</span>' +
+        '<span class="search-result-label">'+U.highlight(r.label, q)+'</span>' +
+        (r.sub ? '<span class="search-result-sub">'+U.esc(r.sub)+'</span>' : '') +
+        '</div>';
+    });
+    el.innerHTML = items.join('');
+    el.classList.add('open');
+  },
+
+  selectControl: function(id) {
+    Typeahead.close();
+    var inp = U.get('search-input');
+    if (inp) { inp.value = id; AS.query = id; }
+    Filter.apply();
+    V.renderCurrentView();
+    V.updateStats();
+    // Also scroll to control
+    setTimeout(function(){ Modal.showControl(id); }, 100);
+  },
+
+  applyToken: function(token) {
+    Typeahead.close();
+    AS.query = (AS.query ? AS.query + ' ' : '') + token;
+    var inp = U.get('search-input');
+    if (inp) inp.value = AS.query;
+    Filter.apply();
+    V.renderCurrentView();
+    V.updateStats();
+  },
+
+  close: function() {
+    var el = U.get('search-dropdown');
+    if (el) { el.classList.remove('open'); el.innerHTML = ''; }
+  }
+};
+
 var A = {
   _searchDebounced: null,
 
   onSearch: function(val) {
     AS.query = val;
+    // Typeahead dropdown
+    Typeahead.search(val);
     if (!A._searchDebounced) {
       A._searchDebounced = U.debounce(function(v) {
         Filter.apply();
@@ -2859,9 +3082,14 @@ var App = {
       U.get('sidebar').classList.add('collapsed');
     }
 
+    // Close typeahead on click outside
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.search-wrap')) Typeahead.close();
+    });
+
     // Keyboard shortcuts
     document.addEventListener('keydown', function(e) {
-      if (e.key === 'Escape') Modal.close();
+      if (e.key === 'Escape') { Modal.close(); Typeahead.close(); }
       if (e.key === '/' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
         e.preventDefault();
         var inp = U.get('search-input');
