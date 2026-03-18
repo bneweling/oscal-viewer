@@ -1694,7 +1694,7 @@ var Export = {
       '<div class="summary">' +
         '<div class="sum-item"><div class="sum-num">'+AS.filtered.length+'</div><div class="sum-lbl">Controls</div></div>' +
         '<div class="sum-item"><div class="sum-num">'+Object.keys(groupSet).length+'</div><div class="sum-lbl">Gruppen</div></div>' +
-        (AS.query ? '<div class="sum-item" style="min-width:200px;"><div style="font-size:9px;color:#6b7280;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px;">Filter</div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#374151;">'+escH(AS.query)+'</div></div>' : '') +
+        (AS.query ? '<div class="sum-item" style="min-width:200px;"><div style="font-size:9px;color:#6b7280;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px;">Filter</div><div style="font-family:monospace;font-size:10px;color:#374151;">'+escH(AS.query)+'</div></div>' : '') +
       '</div>' +
       '<div class="content">' +
         '<table><thead><tr><th>ID</th><th>Titel</th><th>Gruppe</th><th>Sicherheit</th><th>Aufwand</th><th>Tags</th></tr></thead><tbody>' +
@@ -2004,6 +2004,18 @@ var V = {
   },
 
   toggleChip: function(token) {
+    var q = AS.query;
+    if (q.includes(token)) {
+      AS.query = q.replace(token,'').replace(/\s+/g,' ').trim();
+    } else {
+      AS.query = (q ? q + ' ' : '') + token;
+    }
+    var inp = U.get('search-input');
+    if (inp) inp.value = AS.query;
+    Filter.apply();
+    V.renderCurrentView();
+    V.updateStats();
+  },
 
   renderCurrentView: function() {
     var view = AS.view;
