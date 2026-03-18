@@ -1,0 +1,1598 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Grundschutz++ Viewer</title>
+  <style>
+    :root { --bg:#f3f5f7; --panel:#e6ebf2; --card:#f8fafc; --muted:#d0d7e2; --accent:#2f6fd6; --ok:#b56b00; --text:#1b2a3a; --dim:#52647a; }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,Segoe UI,Roboto,Ubuntu,Arial}
+    header{position:sticky;top:0;z-index:20;background:linear-gradient(180deg,#ffffff 0,#eef1f5 100%);border-bottom:1px solid var(--muted);padding:14px 18px;display:flex;gap:14px;align-items:center}
+    header h1{margin:0;font-size:18px;letter-spacing:.2px;white-space:nowrap}
+    .wrap{display:grid;grid-template-columns:340px 1fr;gap:16px;padding:16px}
+    @media(max-width:1100px){.wrap{grid-template-columns:1fr}}
+    aside{background:var(--panel);border:1px solid var(--muted);border-radius:16px;padding:14px;position:sticky;top:70px;height:max-content}
+    .hint{color:var(--dim);font-size:13px}
+    .upload-label{font-size:14px;font-weight:700}
+    .filter-split{margin:12px 0;border:0;border-top:1px dashed var(--muted)}
+    .input,select,button{width:100%;padding:10px 12px;background:#ffffff;color:var(--text);border:1px solid var(--muted);border-radius:12px;outline:none}
+    .input::file-selector-button{padding:8px 10px;border:1px solid var(--muted);background:#f6f8fb;color:var(--text);border-radius:10px;margin-right:10px}
+    .pill{display:inline-flex;gap:8px;align-items:center;padding:6px 10px;border-radius:999px;border:1px solid var(--muted);color:var(--dim);font-size:12px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+    /* Tabs: erzwinge eine Zeile, kein Umbruch, kein Scroll – mit leichtem Abstand & Rahmen wie zuvor */
+    .tabs{display:flex;flex-wrap:nowrap;gap:8px;align-items:center}
+    .tab{padding:6px 8px;border:1px solid var(--muted);border-radius:10px;background:#ffffff;cursor:pointer;white-space:nowrap;flex:0 0 120px;text-align:center}
+    .tab.active{outline:2px solid var(--accent)}
+    .status{display:flex;gap:10px;flex-wrap:wrap}
+    .legend{margin-top:10px;border-top:1px dashed var(--muted);padding-top:10px}
+    .legend h4{margin:0 0 8px 0;font-size:13px;color:var(--dim);font-weight:600}
+    .legend-item{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:12px;color:var(--dim)}
+    .chip{min-width:18px;height:18px;border-radius:4px;border:1px solid var(--muted)}
+    .chip.related{background:#2b2b2b;border-color:#3a3a3a}
+    .chip.required{background:#7a3e00;border-color:#8b4a0a}
+    .chip.param{background:transparent;border:none;position:relative}
+    .chip.param::after{content:"{{ }}"; color:#ffd166; font-weight:700; display:block; line-height:18px; font-size:12px; text-align:center}
+    .chip.param-value{background:transparent;border:none;position:relative}
+    .chip.param-value::after{content:"{{ }}"; color:#b084ff; font-weight:700; display:block; line-height:18px; font-size:12px; text-align:center}
+    .viewer-logo{margin-top:12px;display:flex;justify-content:center}
+    .viewer-logo img{max-width:240px; height:auto; display:block; filter:none}
+    main{display:flex;flex-direction:column;gap:16px}
+    .card{background:var(--card);border:2px solid var(--muted);border-radius:16px;padding:14px}
+    .title{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+    .title h3{margin:0;font-size:16px}
+    .meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+    .meta .kv{font-size:12px;color:var(--dim)}
+    details{background:#f6f8fb;border:1px solid var(--muted);border-radius:12px;padding:10px;margin-top:10px}
+    summary{cursor:pointer}
+    .rel{display:grid;grid-template-columns:1fr;gap:8px;margin-top:8px}
+    .rel-group{margin-top:8px;margin-left:4cm;padding:10px;border-left:3px solid var(--muted);border-radius:8px;background:transparent}
+    .rel-label{font-size:12px;color:var(--dim);margin-left:4cm}
+    .rel-item{padding:10px;border-radius:10px}
+    .rel-item.related{background:#2b2b2b;color:#ffffff;border:1px solid #3a3a3a}
+    .rel-item.required{background:#7a3e00;color:#ffffff;border:1px solid #8b4a0a}
+    .rel-item.related .meta .kv, .rel-item.related .hint, .rel-item.related .note,
+    .rel-item.required .meta .kv, .rel-item.required .hint, .rel-item.required .note{color:#ffffff}
+    /* Enhancement controls (nested OSCAL controls / "Verbesserungen") */
+    .card.enhancement{border-left:4px solid var(--muted)}
+    .badge{padding:2px 6px;border-radius:8px;border:1px solid var(--muted);font-size:11px;color:var(--dim)}
+    .badge.ok{border-color:#6a4a10;color:#ffd08a}
+    #graph{height:85vh;background:#0b1019;border:1px solid var(--muted);border-radius:16px;position:relative}
+    #sunburst,#bar{height:85vh;background:#0b1019;border:1px solid var(--muted);border-radius:16px;position:relative;display:flex;align-items:center;justify-content:center}
+    #jsonTab{height:85vh}
+    #jsonView{height:85vh;background:#0b1019;border:1px solid var(--muted);border-radius:16px;color:#e7f0ff;padding:12px;overflow:auto;white-space:pre-wrap;word-break:break-word;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px}
+    .hidden{display:none!important}
+    .note{font-size:12px;color:var(--dim)}
+    mark{background:#ffffff;color:#000000;padding:1px 4px;border-radius:4px;font-weight:bold}
+    .param{color:#ffd166;font-weight:700}
+    .param-value{color:#b084ff;font-weight:700}
+    .highlight{outline:2px solid var(--accent)}
+    mark.search-hit{background:#ffd166;color:#000000;padding:1px 4px;border-radius:4px;font-weight:bold}
+    .err{background:#2a0b0b;border-color:#5c2222}
+    .graph-toolbar{position:absolute;top:8px;right:8px;display:flex;gap:8px;z-index:5}
+    .btn{padding:8px 10px;border-radius:10px;border:1px solid var(--muted);background:#ffffff;color:var(--text);cursor:pointer}
+    .btn.small{padding:6px 10px;font-size:12px;width:auto;display:inline-flex;align-items:center;justify-content:center}
+
+    .modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:50}
+    .modal.hidden{display:none}
+    .modal-card{width:min(900px,90vw);max-height:85vh;background:#0b1019;border:1px solid var(--muted);border-radius:16px;display:flex;flex-direction:column;overflow:hidden}
+    .modal-header{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid #1b2a3a;color:#e7f0ff}
+    .modal-body{padding:12px;overflow:auto;color:#e7f0ff}
+    .json-pre{white-space:pre-wrap;word-break:break-word;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px}
+  
+
+    /* Topic grouping */
+
+    .practice-group{border:2px solid var(--muted);border-radius:18px;background:var(--panel);padding:12px 14px;margin-bottom:10px}
+    .practice-summary{cursor:pointer;list-style:none}
+    .practice-summary::-webkit-details-marker{display:none}
+    .practice-summary::marker{content:''}
+    .practice-header{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+    .practice-title{display:flex;gap:8px;align-items:center;font-size:16px}
+    .practice-children{margin-top:10px;margin-left:10px;display:flex;flex-direction:column;gap:14px}
+
+    .topic-summary{position:relative;padding-right:20px}
+    .topic-summary::after{content:"▾";position:absolute;right:0;top:0;color:var(--muted)}
+    .topic-group[open] > .topic-summary::after{content:"▴"}
+    .practice-summary{position:relative;padding-right:20px}
+    .practice-summary::after{content:"▾";position:absolute;right:0;top:0;color:var(--muted)}
+    .practice-group[open] > .practice-summary::after{content:"▴"}
+
+    .topic-group:focus-within{outline:2px solid rgba(77,163,255,.25)}
+    .topic-group{border:2px solid var(--muted);border-radius:16px;background:var(--panel);padding:10px 12px}
+    .topic-summary{cursor:pointer;list-style:none}
+    .topic-summary::-webkit-details-marker{display:none}
+    .topic-summary::marker{content:''}
+    .topic-header{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+    .topic-title{display:flex;gap:8px;align-items:center;font-size:15px}
+    .topic-children{margin-top:10px;margin-left:18px;padding-left:14px;border-left:2px solid var(--muted);display:flex;flex-direction:column;gap:12px}
+    .topic-count{font-size:12px;color:var(--dim)}
+
+    /* Multi-select dropdowns with checkboxes */
+
+    details.ms > summary { position: relative; padding-right: 20px; }
+    details.ms > summary::after { content: "▾"; position: absolute; right: 0; top: 0; color: var(--muted); }
+    details.ms[open] > summary::after { content: "▴"; }
+
+    details.ms { background: var(--card); border: 1px solid rgba(0,0,0,.08); border-radius: 12px; padding: 8px 10px; }
+    details.ms > summary { cursor: pointer; list-style: none; color: var(--text); font-weight: 600; user-select: none; }
+    details.ms > summary::-webkit-details-marker { display:none; }
+    details.ms > summary::marker { content: ''; }
+
+    details.ms[open] { box-shadow: 0 12px 30px rgba(0,0,0,.12); }
+    .ms-menu { margin-top: 10px; display:flex; flex-direction:column; gap:6px; max-height: 240px; overflow:auto; padding-right: 4px; }
+    .ms-item { display:flex; gap:8px; align-items:center; font-size: 13px; color: var(--muted); }
+    .ms-item input[type="checkbox"] { width: 14px; height: 14px; }
+    .ms-item .ms-label { color: var(--text); font-weight: 500; }
+    .ms-divider { height:1px; background: rgba(0,0,0,.08); margin: 4px 0; }
+
+  
+
+    /* Print-to-PDF (Export) */
+    body.print-mode { 
+      --bg:#ffffff; --panel:#ffffff; --card:#ffffff; --muted:#c9c9c9;
+      --accent:#0b5cff; --ok:#b25a00; --text:#000000; --dim:#333333;
+    }
+    body.print-mode header,
+    body.print-mode aside,
+    body.print-mode .tabs,
+    body.print-mode #graphTab,
+    body.print-mode #sunburstTab,
+    body.print-mode #barTab,
+    body.print-mode #jsonTab { display:none !important; }
+    body.print-mode .wrap { grid-template-columns: 1fr !important; }
+    body.print-mode main { gap: 10px; }
+    body.print-mode details { background:#ffffff; }
+    body.print-mode .card { background:#ffffff; }
+    body.print-mode mark { background:#f3f3f3; color:#000000; border:1px solid #e0e0e0; }
+    body.print-mode .rel-item.related { background:#f1f1f1; color:#000000; border-color:#666666; }
+    body.print-mode .rel-item.required { background:#ffe8d2; color:#000000; border-color:#8b4a0a; }
+    body.print-mode .pill { display:none !important; }
+    body.print-mode .graph-toolbar { display:none !important; }
+    body.print-mode .note { display:none !important; }
+    @media print{
+      header, aside, .tabs, .graph-toolbar, .note, .pill { display:none !important; }
+      .wrap { grid-template-columns: 1fr !important; }
+      .card { break-inside: avoid; page-break-inside: avoid; }
+    }
+    
+</style>
+</head>
+<body>
+  <header>
+    <h1>Grundschutz++ Viewer</h1>
+    <div class="tabs" role="tablist" aria-label="Ansichten">
+      <button class="tab active" data-tab="list" id="tab-list">Katalog</button>
+      <button class="tab" data-tab="graph" id="tab-graph">Graph</button>
+      <button class="tab" data-tab="sunburst" id="tab-sunburst">Sunburst</button>
+      <button class="tab" data-tab="bar" id="tab-bar">Balkendiagramm</button>
+      <button class="tab" data-tab="json" id="tab-json">JSON</button>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <aside>
+      <label class="hint upload-label">OSCAL Catalog JSON laden</label>
+      <input id="file" class="input" type="file" accept=".json" />
+      <div style="margin-top:10px;display:grid;gap:8px">
+        <input id="urlInput" class="input" type="url" placeholder="Katalog-URL einfügen (JSON)" autocomplete="off" spellcheck="false" />
+        <button id="urlLoadBtn" class="btn" type="button" style="width:100%; justify-content:center;">Von URL laden</button>
+        <div class="note">Hinweis: Bei GitHub-Links ggf. auf die Raw-URL umschreiben.</div>
+      </div>
+
+      <hr class="filter-split" />
+      <div style="margin-top:12px;display:grid;gap:8px" class="toolbar">
+        <input id="q" class="input" type="text" placeholder="Suchen (ID, Titel, Text, Tags…)" autocomplete="off" autocapitalize="off" spellcheck="false" name="q_oscal_viewer_stable2" />
+        <details class="ms" id="groupMS"><summary>Alle Praktiken</summary><div class="ms-menu" id="groupMS_menu"></div></details>
+        <details class="ms" id="classMS"><summary>Alle Quellkataloge</summary><div class="ms-menu" id="classMS_menu"></div></details>
+        <details class="ms" id="secMS"><summary>Alle Sicherheitsniveaus</summary><div class="ms-menu" id="secMS_menu"></div></details>
+        <details class="ms" id="targetMS"><summary>Alle Zielobjekte</summary><div class="ms-menu" id="targetMS_menu"></div></details>
+        <details class="ms" id="tagMS"><summary>Alle Tags</summary><div class="ms-menu" id="tagMS_menu"></div></details>
+      </div>
+
+      <div class="status" style="margin-top:10px">
+        <span id="fileInfo" class="pill">Katalog: keine Datei</span>
+        <span id="countInfo" class="pill">–</span>
+        <span id="graphInfo" class="pill">Graph: 0 Knoten</span>
+      </div>
+
+      
+      <button id="resetBtn" class="btn" type="button" style="width:100%; justify-content:center; margin-top:12px;">
+        Filter zurücksetzen
+      </button>
+
+<div class="legend">
+        <h4>Legende</h4>
+        <div class="legend-item"><span class="chip related"></span> Verwandte Anforderung (related)</div>
+        <div class="legend-item"><span class="chip required"></span> Abhängige Anforderung (required)</div>
+        <div class="legend-item"><span class="chip param"></span> Parameter (Label, gelbe Schrift inkl. {{ }})</div>
+        <div class="legend-item"><span class="chip param-value"></span> Parameterwert (aus values, lila inkl. {{ }})</div>
+      </div>
+
+      <button id="exportPdfBtn" class="btn" type="button" style="width:100%; justify-content:center; margin-top:12px;">
+        Export to PDF
+      </button>
+
+      <!-- Logo: Lege viewer_logo.png in denselben Ordner -->
+      <div class="viewer-logo">
+        <img src="./viewer_logo.png" alt="Viewer – Logo" onerror="this.style.display='none'">
+      </div>
+
+      <p class="note" style="margin-top:10px">Alles läuft lokal im Browser. Kein Upload.</p>
+    </aside>
+
+    <main>
+      <section id="listTab" class="grid"></section>
+
+      <section id="graphTab" class="hidden">
+        <div id="graph">
+          <div class="graph-toolbar">
+            <button id="fitBtn" class="btn" title="Alles anzeigen">Alles anzeigen</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="sunburstTab" class="hidden">
+        <div id="sunburst"></div>
+      </section>
+
+      <section id="barTab" class="hidden">
+        <div id="bar"></div>
+      </section>
+
+      <section id="jsonTab" class="hidden">
+        <pre id="jsonView" class="card">Kein Katalog geladen.</pre>
+      </section>
+
+      <section id="msg" class="card hidden"></section>
+    </main>
+  </div>
+
+  <div id="jsonModal" class="modal hidden" role="dialog" aria-modal="true" aria-label="JSON der Anforderung">
+    <div class="modal-card">
+      <div class="modal-header">
+        <strong>JSON</strong>
+        <button id="jsonModalClose" class="btn small" type="button">Schließen</button>
+      </div>
+      <div class="modal-body">
+        <pre id="jsonModalBody" class="json-pre"></pre>
+      </div>
+    </div>
+  </div>
+
+  <script src="./d3.v7.min.js"></script>
+  <script>
+  (function(){
+    "use strict";
+
+    // Grundschutz++ Viewer: laeuft lokal im Browser und rendert OSCAL Catalogs.
+
+    // Hilfsfunktionen fuer Escaping, Parameter- und Such-Highlighting
+    function escapeHtml(s){
+      return String(s==null?'':s).replace(/[&<>"']/g, function(c){
+        return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+      });
+    }
+    function highlightParamsInEscaped(htmlEscaped){
+      if(!htmlEscaped) return htmlEscaped;
+      return htmlEscaped.replace(/\{\{\s*(value:|label:)?\s*([^}]+)\s*\}\}/g, function(_, kind, body){
+        var cls = (kind && kind.toLowerCase().indexOf('value:')===0) ? 'param-value' : 'param';
+        return '<span class="'+cls+'">{{ '+body.trim()+' }}</span>';
+      });
+    }
+
+    function escapeRegExp(s){ return String(s||'').replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+    function highlightSearchInHtml(html, term){
+      if(!term) return html;
+      var re = new RegExp(escapeRegExp(term), 'gi');
+      return String(html).split(/(<[^>]+>)/g).map(function(part){
+        if(part && part.charAt(0)==='<') return part;
+        return part.replace(re, function(m){ return '<mark class="search-hit">'+m+'</mark>'; });
+      }).join('');
+    }
+
+    function renderTextWithParams(raw, paramMap, searchTerm){
+      var replaced = replaceParams(raw, paramMap);
+      var escaped  = escapeHtml(replaced);
+      var withParams = highlightParamsInEscaped(escaped);
+      return highlightSearchInHtml(withParams, searchTerm);
+    }
+
+    // Minimalistische Map/Set-Hilfen fuer schnelle Lookups
+    function ObjMap(){ this._ = {}; } ObjMap.prototype.set=function(k,v){this._[k]=v;}; ObjMap.prototype.get=function(k){return this._[k];}; ObjMap.prototype.has=function(k){return Object.prototype.hasOwnProperty.call(this._,k);}; ObjMap.prototype.clear=function(){this._={};};
+    function StrSet(){ this._={}; } StrSet.prototype.add=function(k){this._[k]=true;}; StrSet.prototype.has=function(k){return !!this._[k];}; StrSet.prototype.values=function(){var a=[];for(var k in this._){if(this._.hasOwnProperty(k))a.push(k);}return a;};
+
+    function makeSetFromArray(arr){ var s=new StrSet(); for(var i=0;i<arr.length;i++){ s.add(String(arr[i])); } return s; }
+    function uniqueList(arr){ var seen={}, out=[]; for(var i=0;i<arr.length;i++){ var v=arr[i]; if(v && !seen[v]){ seen[v]=1; out.push(v); } } return out; }
+    function splitMulti(s){ if(!s) return []; var parts = String(s).split(/[,;|\\/]/); var out=[]; for(var i=0;i<parts.length;i++){ var t=String(parts[i]).trim(); if(t) out.push(t); } return out; }
+
+    var $=function(s){return document.querySelector(s);}; var $$=function(s){return Array.prototype.slice.call(document.querySelectorAll(s));};
+
+    // Laufzeitstatus: Daten, Filter, Open/Close-Zustand
+    var state={controls:[], idMap:new ObjMap(), edgesBase:[], q:'', qRaw:'', groups:[], classes:[], secs:[], targets:[], tags:[], topics:[], topicById:new ObjMap(), childrenByTopic:{}, ungroupedControls:[], openTopics:{}, practices:[], practiceById:new ObjMap(), topicsByPractice:{}, openPractices:{}, jsonText:''};
+    var allGroups=[], allClasses=[], allSecs=[], allTargets=[], allTags=[];
+
+
+    // DOM-Referenzen fuer schnellen Zugriff
+    var els={ file:$('#file'), urlInput:$('#urlInput'), urlLoadBtn:$('#urlLoadBtn'), q:$('#q'), group:$('#groupMS'), cls:$('#classMS'), sec:$('#secMS'), target:$('#targetMS'), tag:$('#tagMS'), groupMenu:$('#groupMS_menu'), clsMenu:$('#classMS_menu'), secMenu:$('#secMS_menu'), targetMenu:$('#targetMS_menu'), tagMenu:$('#tagMS_menu'), resetBtn:$('#resetBtn'), exportPdfBtn:$('#exportPdfBtn'),
+      fileInfo:$('#fileInfo'), countInfo:$('#countInfo'), graphInfo:$('#graphInfo'),
+      listTab:$('#listTab'), graphTab:$('#graphTab'), sunburstTab:$('#sunburstTab'), barTab:$('#barTab'), jsonTab:$('#jsonTab'), jsonView:$('#jsonView'), msg:$('#msg'),
+      jsonModal:$('#jsonModal'), jsonModalBody:$('#jsonModalBody'), jsonModalClose:$('#jsonModalClose') };
+
+    // --- Multi-select checkbox dropdown helpers (details.ms) ---
+    // Multi-Select Dropdowns: Optionen aufbauen und Auswahl verwalten
+    function msSetItems(detailsEl, menuEl, allLabel, items){
+      menuEl.innerHTML = '';
+      // "All" item
+      const allId = detailsEl.id + '_all';
+      const allRow = document.createElement('label');
+      allRow.className = 'ms-item';
+      const allCb = document.createElement('input');
+      allCb.type = 'checkbox';
+      allCb.dataset.value = '__all__';
+      allCb.id = allId;
+      const allText = document.createElement('span');
+      allText.className = 'ms-label';
+      allText.textContent = allLabel;
+      allRow.appendChild(allCb);
+      allRow.appendChild(allText);
+      menuEl.appendChild(allRow);
+
+      const divider = document.createElement('div');
+      divider.className = 'ms-divider';
+      menuEl.appendChild(divider);
+
+      // Special option: controls without any target object
+      if(detailsEl && detailsEl.id==='targetMS'){
+        const rowN = document.createElement('label');
+        rowN.className = 'ms-item';
+        const cbN = document.createElement('input');
+        cbN.type = 'checkbox';
+        cbN.dataset.value = '__none__';
+        cbN.id = detailsEl.id + '_none';
+        const textN = document.createElement('span');
+        textN.className = 'ms-label';
+        textN.textContent = 'Ohne Zielobjekt';
+        rowN.appendChild(cbN);
+        rowN.appendChild(textN);
+        menuEl.appendChild(rowN);
+      }
+
+      // Special option: controls without any tags
+      if(detailsEl && detailsEl.id==='tagMS'){
+        const rowT = document.createElement('label');
+        rowT.className = 'ms-item';
+        const cbT = document.createElement('input');
+        cbT.type = 'checkbox';
+        cbT.dataset.value = '__notags__';
+        cbT.id = detailsEl.id + '_notags';
+        const textT = document.createElement('span');
+        textT.className = 'ms-label';
+        textT.textContent = 'Ohne Tags';
+        rowT.appendChild(cbT);
+        rowT.appendChild(textT);
+        menuEl.appendChild(rowT);
+      }
+
+      // normal items
+      items.forEach((v, idx) => {
+        const row = document.createElement('label');
+        row.className = 'ms-item';
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.dataset.value = v;
+        cb.id = detailsEl.id + '_opt_' + idx;
+        const text = document.createElement('span');
+        text.className = 'ms-label';
+        text.textContent = v;
+        row.appendChild(cb);
+        row.appendChild(text);
+        menuEl.appendChild(row);
+      });
+
+      function updateAllState(){
+        const cbs = [...menuEl.querySelectorAll('input[type="checkbox"]')].filter(x=>x.dataset.value!=='__all__');
+        const checked = cbs.filter(x=>x.checked);
+        allCb.indeterminate = checked.length>0 && checked.length<cbs.length;
+        allCb.checked = cbs.length>0 && checked.length===cbs.length;
+        msUpdateSummary(detailsEl, allLabel, cbs);
+      }
+
+      allCb.addEventListener('change', () => {
+        const cbs = [...menuEl.querySelectorAll('input[type="checkbox"]')].filter(x=>x.dataset.value!=='__all__');
+        if(allCb.checked){
+          cbs.forEach(x=>x.checked=true);
+        } else {
+          cbs.forEach(x=>x.checked=false);
+        }
+        updateAllState();
+        RefreshViews();
+      });
+
+      menuEl.addEventListener('change', (ev) => {
+        const t = ev.target;
+        if(!(t instanceof HTMLInputElement)) return;
+        if(t.dataset.value==='__all__') return;
+        updateAllState();
+        RefreshViews();
+      });
+
+      // default: all selected
+      const cbs = [...menuEl.querySelectorAll('input[type="checkbox"]')].filter(x=>x.dataset.value!=='__all__');
+      cbs.forEach(x=>x.checked=true);
+      updateAllState();
+    }
+
+    function msUpdateSummary(detailsEl, allLabel, itemCbs){
+      const checked = itemCbs.filter(x=>x.checked).map(x=>x.dataset.value);
+      const sum = detailsEl.querySelector('summary');
+      if(itemCbs.length===0){
+        sum.textContent = allLabel;
+        return;
+      }
+      if(checked.length===0){
+        sum.textContent = allLabel + ' (keine Auswahl)';
+      } else if(checked.length===itemCbs.length){
+        sum.textContent = allLabel;
+      } else if(checked.length<=3){
+        sum.textContent = checked.join(', ');
+      } else {
+        sum.textContent = checked.slice(0,3).join(', ') + ` (+${checked.length-3})`;
+      }
+    }
+
+    function msGetSelected(detailsEl, menuEl){
+      const cbs = [...menuEl.querySelectorAll('input[type="checkbox"]')].filter(x=>x.dataset.value!=='__all__');
+      return cbs.filter(x=>x.checked).map(x=>x.dataset.value);
+    }
+
+
+
+    // Status- und Fehlermeldungen im UI
+    function showMsg(html,isError){ els.msg.innerHTML=html; els.msg.classList.remove('hidden'); if(isError){ els.msg.classList.add('err'); } else { els.msg.classList.remove('err'); } }
+    function hideMsg(){ els.msg.classList.add('hidden'); els.msg.classList.remove('err'); }
+
+    function openJsonModal(obj){
+      if(!els.jsonModal || !els.jsonModalBody) return;
+      var safeObj = obj;
+      if(obj && typeof obj === 'object'){
+        try{
+          safeObj = JSON.parse(JSON.stringify(obj));
+          if(safeObj && Array.isArray(safeObj.controls)){ delete safeObj.controls; }
+        }catch(_e){ safeObj = obj; }
+      }
+      els.jsonModalBody.textContent = JSON.stringify(safeObj, null, 2);
+      els.jsonModal.classList.remove('hidden');
+    }
+    function closeJsonModal(){
+      if(els.jsonModal) els.jsonModal.classList.add('hidden');
+    }
+    if(els.jsonModalClose){
+      els.jsonModalClose.addEventListener('click', function(){ closeJsonModal(); });
+    }
+    if(els.jsonModal){
+      els.jsonModal.addEventListener('click', function(ev){
+        if(ev.target === els.jsonModal){ closeJsonModal(); }
+      });
+    }
+
+    // Tab-Wechsel mit Lazy-Rendering der Diagramme
+    function switchTab(name){
+      var tabs=$$('.tab'); for(var i=0;i<tabs.length;i++){ var b=tabs[i]; b.classList.toggle('active', b.getAttribute('data-tab')===name); }
+      els.listTab.classList.add('hidden'); els.graphTab.classList.add('hidden'); els.sunburstTab.classList.add('hidden'); els.barTab.classList.add('hidden'); els.jsonTab.classList.add('hidden');
+      if(name==='list'){ els.listTab.classList.remove('hidden'); }
+      if(name==='graph'){ els.graphTab.classList.remove('hidden'); drawGraph(); }
+      if(name==='sunburst'){ els.sunburstTab.classList.remove('hidden'); drawSunburst(); }
+      if(name==='bar'){ els.barTab.classList.remove('hidden'); drawBar(); }
+      if(name==='json'){ els.jsonTab.classList.remove('hidden'); renderJsonView(); }
+    }
+    document.getElementById('tab-list').addEventListener('click', function(){ switchTab('list'); });
+    document.getElementById('tab-graph').addEventListener('click', function(){ switchTab('graph'); });
+    document.getElementById('tab-sunburst').addEventListener('click', function(){ switchTab('sunburst'); });
+    document.getElementById('tab-bar').addEventListener('click', function(){ switchTab('bar'); });
+    document.getElementById('tab-json').addEventListener('click', function(){ switchTab('json'); });
+
+    // JSON-Datei laden, parsen und in den Viewer uebernehmen
+    els.file.addEventListener('change', function(ev){
+      var f = ev.target.files && ev.target.files[0]; if(!f) return;
+      els.fileInfo.textContent='Katalog: '+f.name;
+      var reader = new FileReader();
+      reader.onload=function(e){
+        try{
+          state.jsonText = e.target.result || '';
+          var json=JSON.parse(e.target.result);
+          processCatalog(json); renderFilters(); RefreshViews(); hideMsg();
+        }catch(err){ showMsg('<strong>Fehler beim Laden der JSON:</strong><br/><code>'+escapeHtml(String(err.message||err))+'</code>', true); clearUI(); }
+      };
+      reader.onerror=function(){ showMsg('<strong>Fehler beim Lesen der Datei.</strong>', true); };
+      reader.readAsText(f);
+    });
+
+    function normalizeCatalogUrl(input){
+      var url = String(input||'').trim();
+      if(!url) return '';
+      // GitHub-Blob-Links in Raw-Links umschreiben
+      if(url.indexOf('github.com/')!==-1 && url.indexOf('/blob/')!==-1){
+        url = url.replace('github.com/', 'raw.githubusercontent.com/').replace('/blob/', '/');
+      }
+      return url;
+    }
+
+    function loadCatalogFromUrl(rawUrl){
+      var url = normalizeCatalogUrl(rawUrl);
+      if(!url){ return; }
+      els.fileInfo.textContent='Katalog: '+url;
+      fetch(url, { credentials:'omit' })
+        .then(function(res){
+          if(!res.ok){ throw new Error('HTTP '+res.status); }
+          return res.json();
+        })
+        .then(function(json){
+          state.jsonText = JSON.stringify(json, null, 2);
+          processCatalog(json); renderFilters(); RefreshViews(); hideMsg();
+        })
+        .catch(function(err){
+          showMsg('<strong>Fehler beim Laden der URL:</strong><br/><code>'+escapeHtml(String(err.message||err))+'</code>', true);
+          clearUI();
+        });
+    }
+
+    if(els.urlLoadBtn){
+      els.urlLoadBtn.addEventListener('click', function(ev){
+        ev.preventDefault();
+        loadCatalogFromUrl(els.urlInput && els.urlInput.value);
+      });
+    }
+    if(els.urlInput){
+      els.urlInput.addEventListener('keydown', function(ev){
+        if(ev.key==='Enter'){
+          ev.preventDefault();
+          loadCatalogFromUrl(els.urlInput.value);
+        }
+      });
+    }
+
+    // UI-Container zuruecksetzen (z.B. bei Fehlern)
+    function clearUI(){
+      els.listTab.innerHTML='';
+      var g=document.querySelector('#graph'); if(g) g.innerHTML='<div class="graph-toolbar"><button id="fitBtn" class="btn" title="Alles anzeigen">Alles anzeigen</button></div>';
+      var sb=document.querySelector('#sunburst'); if(sb) sb.innerHTML='';
+      var bar=document.querySelector('#bar'); if(bar) bar.innerHTML='';
+      els.countInfo.textContent='–';
+      els.graphInfo.textContent='Graph: 0 Knoten';
+      if(els.jsonView) els.jsonView.textContent='Kein Katalog geladen.';
+    }
+
+    els.q.addEventListener('input', function(){ RefreshViews(); });
+
+    // Filterzustand auslesen und alle Ansichten neu rendern
+    function RefreshViews(){
+      state.qRaw = (els.q.value||'').trim();
+      state.q = state.qRaw.toLowerCase();
+      state.groups = msGetSelected(els.group, els.groupMenu);
+      state.classes = msGetSelected(els.cls, els.clsMenu);
+      state.secs = msGetSelected(els.sec, els.secMenu);
+      state.targets = msGetSelected(els.target, els.targetMenu);
+      state.tags = msGetSelected(els.tag, els.tagMenu);
+      if(!isFilterActive()){ state.openTopics = {}; state.openPractices = {}; }
+      // Initiales Rendering (vor Laden einer Datei leer)
+    renderList();
+      refreshChartsIfVisible();
+    }
+
+    // Multi-select dropdowns fire RefreshViews() internally.
+    // Diagramme nur neu zeichnen, wenn deren Tab sichtbar ist
+    function refreshChartsIfVisible(){
+      if(!els.graphTab.classList.contains('hidden')) drawGraph();
+      if(!els.sunburstTab.classList.contains('hidden')) drawSunburst();
+      if(!els.barTab.classList.contains('hidden')) drawBar();
+    }
+
+    function renderJsonView(){
+      if(!els.jsonView) return;
+      if(state.jsonText){
+        els.jsonView.textContent = state.jsonText;
+      } else {
+        els.jsonView.textContent = 'Kein Katalog geladen.';
+      }
+    }
+
+    // OSCAL-Props auslesen und Normalisierungshilfen
+    function valueOfProp(props,name){ if(!props||!props.length) return ''; for(var i=0;i<props.length;i++){ var p=props[i]; if(p && p.name===name) return p.value||''; } return ''; }
+    function detectEffortLabel(props){
+      var label='Aufwand';
+      if(!props || !props.length) return label;
+      for(var i=0;i<props.length;i++){
+        var p=props[i]; if(!p) continue;
+        var hay=((p.name||'')+' '+(p.ns||'')+' '+(p.class||'')+' '+(p.label||'')).toLowerCase();
+        if(hay.indexOf('aufwand')!==-1){ return 'Aufwand'; }
+        if(hay.indexOf('aufwand')!==-1){ label='Aufwand'; }
+      }
+      return label;
+    }
+
+    function extractEffortInfo(props){
+      var value='';
+      if(props && props.length){
+        var names=['effort_level','effort','level','aufwand'];
+        for(var i=0;i<names.length && !value;i++){
+          value=valueOfProp(props,names[i])||'';
+        }
+        if(!value){
+          for(var j=0;j<props.length && !value;j++){
+            var p=props[j]; if(!p) continue;
+            if(p.value!=null && /^[0-9]+(\.[0-9]+)?$/.test(String(p.value))){ value=String(p.value); }
+          }
+        }
+      }
+      var label=detectEffortLabel(props);
+      return { label:label, value:value };
+    }
+
+
+    // Extraktion: Sicherheitsniveau, Zielobjekte und Tags
+    function extractSecLevelsFromProps(props){
+      var out=[]; if(!props||!props.length) return out;
+      for(var i=0;i<props.length;i++){
+        var p=props[i]; if(!p) continue;
+        var name=(p.name||''); var ns=(p.ns||''); var val=(p.value||'');
+        var nameMatch = /^(sec_level|sec-level|security_level|security-level|sicherheitsniveau)$/i.test(name);
+        var nsMatch = /sicherheitsniveau/i.test(String(ns));
+        if(nameMatch || nsMatch){
+          var vals = splitMulti(val); if(!vals.length && val){ vals=[String(val)]; }
+          for(var k=0;k<vals.length;k++){ out.push(vals[k]); }
+        }
+      }
+      return out;
+    }
+
+    function extractSecLevels(props){
+      return uniqueList(extractSecLevelsFromProps(props));
+    }
+
+
+    function extractTargetsFromProps(props){
+      var out=[]; if(!props||!props.length) return out;
+      for(var i=0;i<props.length;i++){
+        var p=props[i]; if(!p) continue;
+        var name=(p.name||''); var ns=(p.ns||''); var val=(p.value||'');
+        var nameMatch = /^(target_objects?|zielobjekte?)$/i.test(name);
+        var nsMatch = /zielobjekt/i.test(String(ns));
+        if(nameMatch || nsMatch){
+          var vals = splitMulti(val); if(!vals.length && val){ vals=[String(val)]; }
+          for(var k=0;k<vals.length;k++){ out.push(vals[k]); }
+        }
+      }
+      return out;
+    }
+
+    function extractTargets(props, parts){
+      var out = [];
+      var a = extractTargetsFromProps(props); for(var i=0;i<a.length;i++) out.push(a[i]);
+      if(Array.isArray(parts)){
+        for(var j=0;j<parts.length;j++){
+          var p = parts[j];
+          if(p && Array.isArray(p.props)){
+            var b = extractTargetsFromProps(p.props);
+            for(var k=0;k<b.length;k++) out.push(b[k]);
+          }
+        }
+      }
+      return uniqueList(out);
+    }
+
+
+    function extractTagsFromProps(props){
+      var out=[]; if(!props||!props.length) return out;
+      for(var i=0;i<props.length;i++){
+        var p=props[i]; if(!p) continue;
+        var name=(p.name||''); var ns=(p.ns||''); var val=(p.value||'');
+        var nameMatch = /^(tags?|tag)$/i.test(name);
+        var nsMatch = /tags?/i.test(String(ns));
+        if(nameMatch || nsMatch){
+          var vals = splitMulti(val); if(!vals.length && val){ vals=[String(val)]; }
+          for(var k=0;k<vals.length;k++){ out.push(vals[k]); }
+        }
+      }
+      return out;
+    }
+
+    function extractTags(props, parts){
+      var out=[];
+      var a=extractTagsFromProps(props); for(var i=0;i<a.length;i++) out.push(a[i]);
+      if(Array.isArray(parts)){
+        for(var j=0;j<parts.length;j++){
+          var p=parts[j];
+          if(p && Array.isArray(p.props)){
+            var b=extractTagsFromProps(p.props);
+            for(var k=0;k<b.length;k++) out.push(b[k]);
+          }
+        }
+      }
+      return uniqueList(out);
+    }
+
+
+    // Parameter-Mapping: {{ insert: param }} -> Label
+    function buildParamMap(paramsArr){
+      var map = {};
+      if(Array.isArray(paramsArr)){
+        for(var i=0;i<paramsArr.length;i++){
+          var p = paramsArr[i] || {};
+          var pid = (p.id||'').toLowerCase();
+          var label = p.label || valueOfProp(p.props,'label') || '';
+          var values = Array.isArray(p.values) ? p.values : [];
+          var value = values.length ? String(values[0]) : '';
+          if(pid){ map[pid] = { label:label, value:value, hasValue:!!value }; }
+        }
+      }
+      return map;
+    }
+    function replaceParams(text, paramMap){
+      if(!text) return text;
+      return String(text).replace(/\{\{\s*insert\s*:\s*param\s*,\s*([^}\s]+)\s*\}\}/gi, function(m, pid){
+        var key = String(pid||'').toLowerCase();
+        var entry = paramMap && paramMap[key];
+        if(entry && entry.hasValue && entry.value){
+          return '{{ value:' + entry.value + ' }}';
+        }
+        if(entry && entry.label){
+          return '{{ label:' + entry.label + ' }}';
+        }
+        return m;
+      });
+    }
+
+    function partText(parts, name){ if(!parts) return ''; for(var i=0;i<parts.length;i++){ if(parts[i] && parts[i].name===name) return parts[i].prose||''; } return ''; }
+
+    // OSCAL Catalog parsen und interne Strukturen aufbauen
+    function processCatalog(root){
+      state.controls=[]; state.idMap=new ObjMap(); state.edgesBase=[]; state.topics=[]; state.topicById=new ObjMap(); state.childrenByTopic={}; state.ungroupedControls=[]; state.openTopics={}; state.practices=[]; state.practiceById=new ObjMap(); state.topicsByPractice={}; state.openPractices={};
+
+      var catCandidate = root && (root.catalog || root.profile || root.component || root);
+      if(!catCandidate){ throw new Error('Ungültige JSON-Struktur: Erwartet ein "catalog" / "profile" / "component" Objekt.'); }
+      var cat = catCandidate;
+      var fallbackGroupName=(cat.metadata && (cat.metadata.title || cat.title)) || cat.title || 'Katalog';
+
+      // Control sammeln und in Anzeige-Objekt transformieren
+      function collectControl(c, path, topicId, parentId, enhDepth){
+        var id=c.id || c.title || (c.uuid ? ('id-'+String(c.uuid).substring(0,8)) : 'ohne-id');
+        // Enhancement controls: remember parent + nesting depth for indented rendering
+        var enhParentId = parentId || '';
+        var enhDepthVal = enhDepth || 0;
+        var uuid=c.uuid || valueOfProp(c.props,'alt-identifier') || '';
+        var cls=c.class || '';
+        var secLevelsArr=extractSecLevels(c.props);
+        var secLevel=(secLevelsArr.join(', '));
+        var effortInfo=extractEffortInfo(c.props);
+        var effort=effortInfo.value;
+        var effortLabel=effortInfo.label;
+        var parts=Array.isArray(c.parts)? c.parts.map(function(p){ return { id:p.id, name:p.name, prose:(p.prose||''), props:(p.props||[]) }; }) : [];
+        var targetsArr=extractTargets(c.props, parts);
+        var tagsArr=extractTags(c.props, parts);
+        var paramMap = buildParamMap(c.params);
+
+        var topicObj = (topicId && state.topicById.has(topicId)) ? state.topicById.get(topicId) : null;
+        var topicIdVal = topicObj ? topicObj.id : '';
+        var topicTitleVal = topicObj ? (topicObj.title||'') : '';
+        var topicUuidVal = topicObj ? (topicObj.uuid||'') : '';
+
+                // build searchable haystack (for Volltextsuche)
+        var allProse='';
+        if(parts){ for(var pi=0; pi<parts.length; pi++){ if(parts[pi] && parts[pi].prose) allProse += ' ' + parts[pi].prose; } }
+        var hay = [id, (c.title||''), uuid, cls, secLevel, effortLabel, targetsArr.join(', '), tagsArr.join(', '), allProse, topicIdVal, topicTitleVal].join(' \n ').toLowerCase();
+
+        var entry={ id:id, uuid:uuid, title:(c.title||''), class:cls, cls:cls, sec_level:secLevel, sec:secLevel,
+                    effort:effort, effortLabel:effortLabel,
+                    target:(targetsArr.join(', ')), targetsArr:targetsArr,
+                    tags:(tagsArr.join(', ')), tagsArr:tagsArr,
+                    topicId:topicIdVal, topicTitle:topicTitleVal, topicUuid:topicUuidVal,
+                    parentId:enhParentId, enhDepth:enhDepthVal,
+                    parts:parts, raw:c,
+                    searchText: hay,
+                    statement:partText(parts,'statement'), guidance:partText(parts,'guidance'),
+                    links:(c.links||[]), path:[].concat(path), paramMap:paramMap };
+        state.controls.push(entry); state.idMap.set(id, entry);
+        if(topicIdVal){
+          if(!state.childrenByTopic[topicIdVal]) state.childrenByTopic[topicIdVal]=[];
+          state.childrenByTopic[topicIdVal].push(entry);
+        } else {
+          state.ungroupedControls.push(entry);
+        }
+        if(Array.isArray(c.controls)){ for(var i=0;i<c.controls.length;i++){ collectControl(c.controls[i], path, topicId, id, enhDepthVal+1); } }
+      }
+      // Themen-ID erkennen (z.B. "GC.1"), Praktiken haben keinen Punkt
+      function isTopicId(id){
+        var parts=String(id||'').split('.');
+        if(parts.length!==2) return false;
+        return /^[0-9]+$/.test(parts[1]);
+      }
+
+      // Walk in the same order as in the JSON: if groups exist, traverse them; otherwise traverse top-level controls.
+      // Gruppen rekursiv durchlaufen: Praktik -> Thema -> Controls
+      function walkGroup(grp,gpath,currentTopicId,currentPracticeId){
+        var label=grp.id || grp.title || fallbackGroupName; var path=(gpath||[]).concat([label]);
+        var topicId=currentTopicId || '';
+        var practiceId=currentPracticeId || '';
+        var gid = String(grp.id||'');
+        // Practice: group id without dot (e.g., GC, KONF)
+        if(gid && gid.indexOf('.')===-1){
+          practiceId = gid;
+          if(practiceId && !state.practiceById.has(practiceId)){
+            var puuid = valueOfProp(grp.props,'alt-identifier') || '';
+            var ptitle = grp.title || grp.id || '';
+            var pEntry = { id:practiceId, title:ptitle, uuid:puuid, path:[].concat(path), searchText:(String(practiceId)+' '+String(ptitle)).toLowerCase() };
+            state.practices.push(pEntry);
+            state.practiceById.set(practiceId, pEntry);
+            if(!state.topicsByPractice[practiceId]) state.topicsByPractice[practiceId]=[];
+          }
+        }
+        if(isTopicId(grp.id)){
+          topicId=String(grp.id||'');
+          if(topicId && !state.topicById.has(topicId)){
+            var tuuid=valueOfProp(grp.props,'alt-identifier') || '';
+            var ttitle=grp.title || grp.id || '';
+            var topicEntry={ id:topicId, title:ttitle, uuid:tuuid, path:[].concat(path), searchText:(String(topicId)+' '+String(ttitle)).toLowerCase(), practiceId:practiceId };
+            state.topics.push(topicEntry);
+            state.topicById.set(topicId, topicEntry);
+            if(!state.childrenByTopic[topicId]) state.childrenByTopic[topicId]=[];
+            if(practiceId){
+              if(!state.topicsByPractice[practiceId]) state.topicsByPractice[practiceId]=[];
+              state.topicsByPractice[practiceId].push(topicEntry);
+            }
+          }
+        }
+        if(Array.isArray(grp.controls)){ for(var j=0;j<grp.controls.length;j++){ collectControl(grp.controls[j], path, topicId); } }
+        if(Array.isArray(grp.groups)){ for(var k=0;k<grp.groups.length;k++){ walkGroup(grp.groups[k], path, topicId, practiceId); } }
+      }
+      if(Array.isArray(cat.groups)){ for(var g=0; g<cat.groups.length; g++){ walkGroup(cat.groups[g], [], '', ''); } }
+
+      for(var x=0;x<state.controls.length;x++){
+        var c=state.controls[x]; if(!Array.isArray(c.links)) continue;
+        for(var y=0;y<c.links.length;y++){
+          var L=c.links[y]; var rel=(L.rel||'').toLowerCase(); var ref=String(L.href||'').replace(/^#/,''); var tgt=state.idMap.get(ref);
+          if(tgt){ state.edgesBase.push({ source:c.id, target:tgt.id, rel:rel }); }
+        }
+      }
+      els.countInfo.textContent=state.controls.length + ' Anforderungen';
+      if(!state.controls.length){ showMsg('<strong>Keine Anforderungen gefunden.</strong><br/>Erwartet: <code>catalog.controls</code> oder <code>catalog.groups[*].controls</code>.', true); }
+    }
+    // Filteroptionen aus dem geladenen Katalog ableiten
+    function renderFilters(){
+      var groupsRaw=[]; for(var i=0;i<state.controls.length;i++){ var g=(state.controls[i].path && state.controls[i].path[0]) || ''; if(g) groupsRaw.push(g); }
+      var groups=uniqueList(groupsRaw).sort();
+      allGroups = uniqueList(groupsRaw).sort();
+      msSetItems(els.group, els.groupMenu, 'Alle Praktiken', allGroups);
+var classesRaw=[]; for(var j=0;j<state.controls.length;j++){ var c=state.controls[j].class||''; if(c) classesRaw.push(c); }
+      var classes=uniqueList(classesRaw).sort();
+      allClasses = uniqueList(classesRaw).sort();
+      msSetItems(els.cls, els.clsMenu, 'Alle Quellkataloge', allClasses);
+var secRaw=[];
+      for(var s=0;s<state.controls.length;s++){
+        var v=(state.controls[s].sec_level||'');
+        if(v){
+          var parts2=splitMulti(v); if(!parts2.length && v){ parts2=[String(v)]; }
+          for(var p2=0;p2<parts2.length;p2++){
+            var t2=String(parts2[p2]).trim();
+            if(t2) secRaw.push(t2);
+          }
+        }
+      }
+      allSecs = uniqueList(secRaw).sort();
+      msSetItems(els.sec, els.secMenu, 'Alle Sicherheitsniveaus', allSecs);
+var targetsRaw=[]; for(var k=0;k<state.controls.length;k++){ var t=(state.controls[k].target||''); if(t){ var parts=t.split(','); for(var p=0;p<parts.length;p++){ var s=String(parts[p]).trim(); if(s) targetsRaw.push(s); } } }
+      var targets=uniqueList(targetsRaw).sort();
+      allTargets = uniqueList(targetsRaw).sort();
+      msSetItems(els.target, els.targetMenu, 'Alle Zielobjekte', allTargets);
+
+      // Tags (each control may have multiple)
+      var tagsRaw=[];
+      for(var ci=0;ci<state.controls.length;ci++){
+        var ta = state.controls[ci].tagsArr || [];
+        for(var k=0;k<ta.length;k++){
+          var s=String(ta[k]).trim();
+          if(s) tagsRaw.push(s);
+        }
+      }
+      allTags = uniqueList(tagsRaw).sort();
+      msSetItems(els.tag, els.tagMenu, 'Alle Tags', allTags);
+      bindResetButton();
+    bindExportButton();
+}
+function baseMatches(c){ return matches(c); }
+
+
+    // Pruefen, ob Suche/Filter aktiv sind (steuert Auto-Open)
+    function isFilterActive(){
+      if(state.q) return true;
+      if(allGroups.length && state.groups.length !== allGroups.length) return true;
+      if(allClasses.length && state.classes.length !== allClasses.length) return true;
+      if(allSecs.length && state.secs.length !== allSecs.length) return true;
+      var baseTargetsLen = allTargets.length + 1; // + '__none__'
+      if(allTargets.length && state.targets.length !== baseTargetsLen) return true;
+      var baseTagsLen = allTags.length + 1; // + '__notags__'
+      if(allTags.length && state.tags.length !== baseTagsLen) return true;
+      return false;
+    }
+
+    // Filter- und Suchlogik fuer ein einzelnes Control
+    function matches(c){
+      // read current selections (already set by RefreshViews)
+      if(allGroups.length && state.groups.length===0) return false;
+      if(allClasses.length && state.classes.length===0) return false;
+      if(allSecs.length && state.secs.length===0) return false;
+      if(allTargets.length && state.targets.length===0) return false;
+      if(allTags.length && state.tags.length===0) return false;
+
+      // Praktiken
+      if(allGroups.length && state.groups.length !== allGroups.length){
+        var g=((c.path && c.path[0]) || '');
+        if(state.groups.indexOf(g)===-1) return false;
+      }
+
+      // Quellkatalog / Herkunft
+      if(allClasses.length && state.classes.length !== allClasses.length){
+        if(state.classes.indexOf((c.cls||''))===-1) return false;
+      }
+
+      // Sicherheitsniveau
+      if(allSecs.length && state.secs.length !== allSecs.length){
+        if(state.secs.indexOf((c.sec||''))===-1) return false;
+      }
+
+      // Zielobjekte (mindestens eins passt) — unterstützt '__none__' für Anforderungen ohne Zielobjekt
+      var baseTargetsLen = allTargets.length + 1; // + '__none__'
+      if(allTargets.length && state.targets.length !== baseTargetsLen){
+        var okT=false;
+        var ta=(c.targetsArr||[]);
+        for(var i=0;i<state.targets.length;i++){
+          var v = state.targets[i];
+          if(v==='__none__'){
+            if(!ta || ta.length===0){ okT=true; break; }
+          } else {
+            if(ta.indexOf(v)!==-1){ okT=true; break; }
+          }
+        }
+        if(!okT) return false;
+      }
+
+      // Tags (Inklusion mit 'Ohne Tags')
+      if(allTags.length){
+        var baseTagsLen = allTags.length + 1; // + '__notags__' (Ohne Tags)
+        if(state.tags.length !== baseTagsLen){
+          var selHasNoTags = (state.tags.indexOf('__notags__') !== -1);
+          var ct = (c.tagsArr||[]);
+
+          if(!ct || ct.length===0){
+            if(!selHasNoTags) return false; // ohne Tags nur wenn 'Ohne Tags' gewählt
+          } else {
+            var okTag=false;
+            for(var ti=0; ti<state.tags.length; ti++){
+              var tagv = state.tags[ti];
+              if(tagv==='__notags__') continue;
+              if(ct.indexOf(tagv)!==-1){ okTag=true; break; }
+            }
+            if(!okTag) return false;
+          }
+        }
+      }
+
+      // Freitextsuche
+      if(state.q){
+        if((c.searchText||'').indexOf(state.q)===-1) return false;
+      }
+      return true;
+    }
+
+    // Hauptansicht: Praktiken -> Themen -> Anforderungen rendern
+    function renderList(){
+      try{
+        els.listTab.innerHTML='';
+        var matched=[]; for(var i=0;i<state.controls.length;i++){ var c=state.controls[i]; if(matches(c)) matched.push(c); }
+        var matchedSet={}; for(var mi=0; mi<matched.length; mi++){ matchedSet[matched[mi].id]=true; }
+        if(!matched.length){ els.listTab.innerHTML='<div class=\"card\">Keine Ergebnisse für die aktuelle Filterung.</div>'; els.graphInfo.textContent='Graph: 0 Knoten'; return; }
+
+        var hasTopics = state.topics && state.topics.length;
+        var hasPractices = state.practices && state.practices.length;
+        var active = isFilterActive();
+        var anyRendered=false;
+
+        function renderTopics(topicList){
+          var frag=document.createDocumentFragment();
+          for(var t=0;t<topicList.length;t++){
+            var topic = topicList[t];
+            var kids = state.childrenByTopic[topic.id] || [];
+            var matchedKids=[]; for(var k=0;k<kids.length;k++){ if(matchedSet[kids[k].id]) matchedKids.push(kids[k]); }
+            if(active){
+              if(matchedKids.length===0) continue;
+            }
+
+            var details=document.createElement('details');
+            details.className='topic-group';
+            details.open = active ? (matchedKids.length>0) : !!state.openTopics[topic.id];
+
+            var summary=document.createElement('summary');
+            summary.className='topic-summary';
+            var topicTitleHtml = renderTextWithParams(topic.title, {}, state.qRaw);
+            var countLabel = (active ? matchedKids.length : kids.length) + ' Anforderungen';
+            summary.innerHTML=''
+              + '<div class=\"topic-header\">'
+              +   '<div class=\"topic-title\"><mark>'+escapeHtml(topic.id)+'</mark> – <strong>Thema</strong>: '+topicTitleHtml+'</div>'
+              +   '<span class=\"badge\">'+escapeHtml(countLabel)+'</span>'
+              + '</div>'
+              + (topic.uuid? '<div class=\"meta\" style=\"margin-top:6px\"><span class=\"kv\">UUID: <code>'+escapeHtml(topic.uuid)+'</code></span></div>':'');
+            details.appendChild(summary);
+
+            var childWrap=document.createElement('div');
+            childWrap.className='topic-children';
+            if(matchedKids.length){
+              for(var cidx=0;cidx<matchedKids.length;cidx++){ childWrap.appendChild(renderCard(matchedKids[cidx])); }
+            } else {
+              var empty=document.createElement('div');
+              empty.className='note';
+              empty.textContent = 'Keine Anforderungen in der aktuellen Filterung.';
+              childWrap.appendChild(empty);
+            }
+            details.appendChild(childWrap);
+
+            (function(id, el){
+              el.addEventListener('toggle', function(){ state.openTopics[id]=el.open; });
+            })(topic.id, details);
+
+            frag.appendChild(details);
+            anyRendered=true;
+          }
+          return frag;
+        }
+
+        if(hasPractices){
+          for(var p=0;p<state.practices.length;p++){
+            var prac = state.practices[p];
+            var topics = state.topicsByPractice[prac.id] || [];
+            // Filter topics by active search/filters
+            var topicHasMatch=false;
+            for(var ti=0; ti<topics.length; ti++){
+              var kids = state.childrenByTopic[topics[ti].id] || [];
+              for(var kj=0; kj<kids.length; kj++){
+                if(matchedSet[kids[kj].id]){ topicHasMatch=true; break; }
+              }
+              if(topicHasMatch) break;
+            }
+            if(active && !topicHasMatch) continue;
+
+            var pDetails=document.createElement('details');
+            pDetails.className='practice-group';
+            pDetails.open = active ? topicHasMatch : !!state.openPractices[prac.id];
+
+            var pSummary=document.createElement('summary');
+            pSummary.className='practice-summary';
+            var pTitleHtml = renderTextWithParams(prac.title, {}, state.qRaw);
+            pSummary.innerHTML=''
+              + '<div class=\"practice-header\">'
+              +   '<div class=\"practice-title\"><mark>'+escapeHtml(prac.id)+'</mark> – <strong>Praktik</strong>: '+pTitleHtml+'</div>'
+              + '</div>'
+              + (prac.uuid? '<div class=\"meta\" style=\"margin-top:6px\"><span class=\"kv\">UUID: <code>'+escapeHtml(prac.uuid)+'</code></span></div>':'');
+            pDetails.appendChild(pSummary);
+
+            var pChild=document.createElement('div');
+            pChild.className='practice-children';
+            pChild.appendChild(renderTopics(topics));
+            pDetails.appendChild(pChild);
+
+            (function(id, el){
+              el.addEventListener('toggle', function(){ state.openPractices[id]=el.open; });
+            })(prac.id, pDetails);
+
+            els.listTab.appendChild(pDetails);
+            anyRendered=true;
+          }
+        } else if(hasTopics){
+          els.listTab.appendChild(renderTopics(state.topics));
+        } else {
+          for(var j=0;j<matched.length;j++){ els.listTab.appendChild(renderCard(matched[j])); }
+          anyRendered=true;
+        }
+
+        // Render ungrouped controls (if any)
+        if(state.ungroupedControls && state.ungroupedControls.length){
+          var unc=[]; for(var u=0;u<state.ungroupedControls.length;u++){ if(matchedSet[state.ungroupedControls[u].id]) unc.push(state.ungroupedControls[u]); }
+          if(unc.length){
+            var head=document.createElement('div');
+            head.className='card';
+            head.innerHTML='<div class=\"title\"><h3>Ohne Thema</h3></div>';
+            els.listTab.appendChild(head);
+            for(var ui=0; ui<unc.length; ui++){ els.listTab.appendChild(renderCard(unc[ui])); }
+            anyRendered=true;
+          }
+        }
+
+        if(!anyRendered){
+          els.listTab.innerHTML='<div class=\"card\">Keine Ergebnisse für die aktuelle Filterung.</div>';
+          els.graphInfo.textContent='Graph: 0 Knoten';
+          return;
+        }
+        els.graphInfo.textContent='Graph: '+matched.length+' Knoten';
+      }catch(e){ showMsg('<strong>Fehler beim Rendern der Liste:</strong><br/><code>'+escapeHtml(String(e.message||e))+'</code>', true); }
+    }
+
+    // Einzelkarte fuer eine Anforderung inkl. Details und Beziehungen
+    function renderCard(c){
+      var div=document.createElement('article'); div.className='card'; div.id='card-'+cssId(c.id);
+      // Enhancement controls (nested controls) should be displayed indented under their parent
+      if(c && c.enhDepth && c.enhDepth>0){
+        div.classList.add('enhancement');
+        div.style.marginLeft = (c.enhDepth * 2) + 'cm';
+      }
+      var titleHtml = renderTextWithParams(c.title, c.paramMap, state.qRaw);
+      var statementHtml = renderTextWithParams(c.statement, c.paramMap, state.qRaw);
+      var guidanceHtml = renderTextWithParams(c.guidance, c.paramMap, state.qRaw);
+
+      div.innerHTML=''
+        + '<div class="title"><h3><mark>'+escapeHtml(c.id)+'</mark> – '+titleHtml+'</h3></div>'
+        + '<div class="meta">'
+        +   '<span class="kv">UUID: <code>'+escapeHtml(c.uuid||'–')+'</code></span>'
+        +   (c.class? '<span class="kv">Quellkatalog: <code>'+escapeHtml(c.class)+'</code></span>':'')
+        +   (c.sec_level? '<span class="kv">Sicherheitsniveau: <code>'+escapeHtml(c.sec_level)+'</code></span>':'')
+        +   (c.effort? '<span class="kv">'+escapeHtml(c.effortLabel||'Aufwand')+': <code>'+escapeHtml(c.effort)+'</code></span>':'')
+        +   (c.topicId? '<span class="kv">Thema: <code>'+escapeHtml(c.topicId)+'</code>' + (c.topicTitle? ' – '+escapeHtml(c.topicTitle):'') + '</span>':'')
+        +   (c.target? '<span class="kv">Zielobjekt: <code>'+escapeHtml(c.target)+'</code></span>':'')
+        +   (c.tags? '<span class="kv">Tags: <code>'+escapeHtml(c.tags)+'</code></span>':'')
+        + '</div>';
+
+      var details=document.createElement('div');
+      if(c.statement){ var st=document.createElement('details'); st.open=true; st.innerHTML='<summary><strong>Statement</strong></summary><div style="white-space:pre-wrap;margin-top:8px)">'+statementHtml+'</div>'; details.appendChild(st); }
+      if(c.guidance){ var gu=document.createElement('details'); if(state.q && String(c.guidance).toLowerCase().indexOf(state.q)!==-1){ gu.open=true; } gu.innerHTML='<summary><strong>Guidance</strong></summary><div style="white-space:pre-wrap;margin-top:8px)">'+guidanceHtml+'</div>'; details.appendChild(gu); }
+      if(Array.isArray(c.parts)){
+        for(var p=0;p<c.parts.length;p++){
+          var part=c.parts[p]; if(!part||!part.prose) continue; if(part.name==='statement'||part.name==='guidance') continue;
+          var proseHtml = renderTextWithParams(part.prose, c.paramMap, state.qRaw);
+          var di=document.createElement('details'); di.innerHTML='<summary><strong>'+escapeHtml(part.name||part.id||'Part')+'</strong></summary><div style="white-space:pre-wrap;margin-top:8px)">'+proseHtml+'</div>'; details.appendChild(di);
+        }
+      }
+      if(details.childElementCount) div.appendChild(details);
+
+      var required=[], related=[];
+      if(Array.isArray(c.links)){
+        for(var r=0;r<c.links.length;r++){
+          var L=c.links[r]; var rel=(L.rel||'').toLowerCase(); var ref=String(L.href||'').replace(/^#/,''); var tgt=state.idMap.get(ref);
+          if(!tgt) continue; if(rel==='required') required.push(tgt); else if(rel==='related') related.push(tgt);
+        }
+      }
+      var relWrap=document.createElement('div');
+      if(required.length){ var b1=document.createElement('div'); b1.style.marginTop='10px'; b1.innerHTML='<div class="rel-label"><span class="badge ok">abhängig von (required)</span></div>'; var g1=document.createElement('div'); g1.className='rel-group'; var l1=document.createElement('div'); l1.className='rel'; for(var a=0;a<required.length;a++){ l1.appendChild(renderRelItem(required[a], 'required')); } g1.appendChild(l1); b1.appendChild(g1); relWrap.appendChild(b1); }
+      if(related.length){ var b2=document.createElement('div'); b2.style.marginTop='10px'; b2.innerHTML='<div class="rel-label"><span class="badge">verwandt (related)</span></div>'; var g2=document.createElement('div'); g2.className='rel-group'; var l2=document.createElement('div'); l2.className='rel'; for(var b=0;b<related.length;b++){ l2.appendChild(renderRelItem(related[b], 'related')); } g2.appendChild(l2); b2.appendChild(g2); relWrap.appendChild(b2); }
+      if(relWrap.childElementCount) div.appendChild(relWrap);
+
+      var actions=document.createElement('div');
+      actions.style.marginTop='10px';
+      actions.style.display='flex';
+      actions.style.justifyContent='flex-end';
+      var jsonBtn=document.createElement('button');
+      jsonBtn.className='btn small';
+      jsonBtn.type='button';
+      jsonBtn.textContent='JSON';
+      jsonBtn.addEventListener('click', function(){ if(c.raw){ openJsonModal(c.raw); } });
+      actions.appendChild(jsonBtn);
+      div.appendChild(actions);
+
+      return div;
+    }
+
+    // Rendering fuer relationale Karten (required/related)
+    function renderRelItem(t,kind){
+      var el=document.createElement('div'); el.className='rel-item ' + (kind==='required'?'required':'related');
+      var stHtml = renderTextWithParams(t.statement, t.paramMap, state.qRaw);
+      var titleHtml = renderTextWithParams(t.title, t.paramMap, state.qRaw);
+      el.innerHTML=''
+        + '<div><strong>'+escapeHtml(t.id)+'</strong> – '+titleHtml+'</div>'
+        + '<div class="meta">'
+        +   '<span class="kv">UUID: <code>'+escapeHtml(t.uuid||'–')+'</code></span>'
+        +   (t.topicId? '<span class="kv">Thema: <code>'+escapeHtml(t.topicId)+'</code>' + (t.topicTitle? ' – '+escapeHtml(t.topicTitle):'') + '</span>':'')
+        + '</div>'
+        + (t.statement? '<div class="hint" style="white-space:pre-wrap;margin-top:6px)">'+stHtml+'</div>':'')
+        + '<div style="margin-top:6px"><button class="btn-goto input" style="width:auto">Zum Eintrag</button></div>';
+      el.querySelector('.btn-goto').addEventListener('click', function(){
+        switchTab('list');
+        if(t.topicId){
+          state.openTopics[t.topicId]=true;
+          var topic = state.topicById && state.topicById.get ? state.topicById.get(t.topicId) : null;
+          if(topic && topic.practiceId){ state.openPractices[topic.practiceId]=true; }
+          renderList();
+        }
+        setTimeout(function(){
+          var card=document.getElementById('card-'+cssId(t.id));
+          if(card){
+            card.scrollIntoView({behavior:'smooth',block:'center'});
+            card.classList.add('highlight');
+            setTimeout(function(){ card.classList.remove('highlight'); },1500);
+          }
+        }, 0);
+      });
+      return el;
+    }
+
+    /* ---------------- Graph ---------------- */
+    function drawGraph(){
+      try{
+        var el=document.getElementById('graph'); if(!el) return;
+        el.innerHTML='<div class="graph-toolbar"><button id="fitBtn" class="btn" title="Alles anzeigen">Alles anzeigen</button></div>';
+
+        if(typeof d3==='undefined'){ el.innerHTML='<div class="card">D3 wurde nicht geladen. Lege <code>d3.v7.min.js</code> in den Ordner.</div>'; els.graphInfo.textContent='Graph: 0 Knoten'; return; }
+
+        function normalizeEdges(edges){
+          var out=[];
+          if(!edges || !edges.length) return out;
+          for(var i=0;i<edges.length;i++){
+            var e=edges[i]; if(!e) continue;
+            var s=(e.source && typeof e.source==='object') ? e.source.id : e.source;
+            var t=(e.target && typeof e.target==='object') ? e.target.id : e.target;
+            s=String(s); t=String(t);
+            var rel=(e.rel||'');
+            // Bei "required"-Beziehungen soll der Pfeil von der Voraussetzung zur abhängigen Anforderung zeigen.
+            if(rel==='required'){
+              var tmp=s; s=t; t=tmp;
+            }
+            out.push({ source:s, target:t, rel:rel });
+          }
+          return out;
+        }
+
+        var normEdges=normalizeEdges(state.edgesBase);
+
+        var primary=[]; for(var i=0;i<state.controls.length;i++){ var c=state.controls[i]; if(baseMatches(c)) primary.push(c); }
+        var primaryIds=makeSetFromArray(primary.map(function(c){ return c.id; }));
+
+        var incidentEdges=[];
+        for(var ie=0; ie<normEdges.length; ie++){
+          var e=normEdges[ie];
+          if(primaryIds.has(e.source) || primaryIds.has(e.target)) incidentEdges.push(e);
+        }
+
+        var nodeIdSet=new StrSet();
+        for(var p=0;p<primary.length;p++){ nodeIdSet.add(primary[p].id); }
+        for(var j=0;j<incidentEdges.length;j++){ nodeIdSet.add(incidentEdges[j].source); nodeIdSet.add(incidentEdges[j].target); }
+
+        var ids=nodeIdSet.values();
+        var nodes=[];
+        for(var n=0;n<ids.length;n++){
+          var cn=state.idMap.get(ids[n]);
+          if(cn){ nodes.push({ id:cn.id, title:cn.title, group:(cn.path&&cn.path[0])||'', cls:cn.class||'' }); }
+        }
+        var links=[];
+        for(var m=0;m<incidentEdges.length;m++){ links.push({ source:incidentEdges[m].source, target:incidentEdges[m].target, rel:incidentEdges[m].rel }); }
+
+        if(!nodes.length){ el.innerHTML='<div class="card">Keine Daten für den Graphen in der aktuellen Filterung.</div>'; els.graphInfo.textContent='Graph: 0 Knoten / 0 Kanten'; return; }
+
+        var width=el.clientWidth || (el.parentElement && el.parentElement.clientWidth) || 900; var height=el.clientHeight || 600;
+        var svg=d3.select(el).append('svg').attr('width', width).attr('height', height); var g=svg.append('g');
+
+        svg.append('defs').append('marker')
+          .attr('id','depArrow').attr('viewBox','0 -5 10 10')
+          .attr('refX',20).attr('refY',0).attr('markerWidth',8).attr('markerHeight',8).attr('orient','auto')
+          .append('path').attr('d','M0,-5L10,0L0,5').attr('fill','#f3b44a');
+
+        var sim=d3.forceSimulation(nodes)
+          .force('link', d3.forceLink(links).id(function(d){return d.id;}).distance(120).strength(.25))
+          .force('charge', d3.forceManyBody().strength(-240))
+          .force('center', d3.forceCenter(width/2,height/2))
+          .force('collide', d3.forceCollide(40));
+
+        var link=g.selectAll('.link').data(links).enter().append('line')
+          .attr('class','link')
+          .attr('stroke', function(d){return d.rel==='required' ? '#f3b44a' : '#6aa7ff';})
+          .attr('stroke-width',1.5)
+          .attr('marker-end', function(d){return d.rel==='required'?'url(#depArrow)':null;})
+          .attr('opacity',0.9);
+
+        var node=g.selectAll('.node').data(nodes).enter().append('g').attr('class','node')
+          .call(d3.drag()
+            .on('start', function(ev,d){d.fx=d.x; d.fy=d.y;})
+            .on('drag', function(ev,d){d.fx=ev.x; d.fy=ev.y;})
+            .on('end', function(ev,d){d.fx=null; d.fy=null;})
+          );
+
+        node.append('circle').attr('r',10).attr('fill','#1e2a3e').attr('stroke','#6aa7ff').attr('stroke-width',1.5);
+        node.append('text').text(function(d){return d.id;}).attr('x',14).attr('y',4).attr('font-size','12px').attr('fill','#dce8ff');
+        node.on('click', function(ev,d){
+          switchTab('list');
+          var card=document.getElementById('card-'+cssId(d.id));
+          if(card){ card.scrollIntoView({behavior:'smooth',block:'center'}); card.classList.add('highlight'); setTimeout(function(){ card.classList.remove('highlight'); },1500); }
+        });
+
+        var autoFitDone=false;
+        var userInteracted=false;
+
+        var zoom=d3.zoom().scaleExtent([0.03,10]).on('zoom', function(event){
+          g.attr('transform', event.transform);
+          if(event.sourceEvent){ userInteracted=true; }
+        });
+        svg.call(zoom);
+
+        function fitToScreenInternal(){
+          var minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=Infinity*-1;
+          for(var i=0;i<nodes.length;i++){
+            var nx = nodes[i].x || 0, ny = nodes[i].y || 0;
+            if(nx<minX) minX=nx; if(nx>maxX) maxX=nx;
+            if(ny<minY) minY=ny; if(ny>maxY) maxY=ny;
+          }
+          var padding = 40;
+          var bw = (maxX - minX) + padding*2;
+          var bh = (maxY - minY) + padding*2;
+          var scale = Math.min((el.clientWidth||900) / bw, (el.clientHeight||600) / bh);
+          if(!isFinite(scale) || scale<=0) scale = 1;
+          if(scale < 0.03) scale = 0.03; if(scale > 10) scale = 10;
+          var tx = ((el.clientWidth||900) - scale*(minX+maxX))/2;
+          var ty = ((el.clientHeight||600) - scale*(minY+maxY))/2;
+          svg.transition().duration(400).call(zoom.transform, d3.zoomIdentity.translate(tx,ty).scale(scale));
+        }
+
+        function autoFitToScreen(){
+          if(autoFitDone || userInteracted) return;
+          autoFitDone=true;
+          fitToScreenInternal();
+        }
+
+        function manualFitToScreen(){
+          fitToScreenInternal();
+        }
+
+        var fitBtn = document.getElementById('fitBtn');
+        if(fitBtn){ fitBtn.addEventListener('click', manualFitToScreen); }
+
+        sim.on('tick', function(){
+          link.attr('x1', function(d){return d.source.x;})
+              .attr('y1', function(d){return d.source.y;})
+              .attr('x2', function(d){return d.target.x;})
+              .attr('y2', function(d){return d.target.y;});
+          node.attr('transform', function(d){return 'translate('+d.x+','+d.y+')';});
+        });
+        sim.on('end', autoFitToScreen);
+
+        els.graphInfo.textContent='Graph: '+nodes.length+' Knoten / '+links.length+' Kanten';
+      }catch(e){
+        showMsg('<strong>Fehler beim Rendern des Graphen:</strong><br/><code>'+escapeHtml(String(e.message||e))+'</code>', true);
+      }
+    }
+
+    /* ---------------- Sunburst ---------------- */
+    function drawSunburst(){
+      var container = document.getElementById('sunburst');
+      container.innerHTML='';
+      if(typeof d3==='undefined'){ container.innerHTML='<div class="card">D3 wurde nicht geladen.</div>'; return; }
+
+      var counts = {};
+      for(var i=0;i<state.controls.length;i++){
+        var c = state.controls[i];
+        if(!matches(c)) continue;
+        var g = (c.path && c.path[0]) || 'Unbekannt';
+        counts[g] = (counts[g]||0) + 1;
+      }
+      var keys = Object.keys(counts);
+      if(!keys.length){ container.innerHTML='<div class="card">Keine Daten für die aktuelle Filterung.</div>'; return; }
+
+      var data = { name:'Praktiken', children: keys.map(function(k){ return { name:k, value:counts[k] }; }) };
+
+      var w = container.clientWidth || 900;
+      var h = container.clientHeight || 600;
+      var r = Math.min(w,h)/2 - 10;
+
+      var color = d3.scaleOrdinal(d3.schemeTableau10).domain(keys);
+
+      var root = d3.hierarchy(data).sum(function(d){ return d.value||0; });
+      d3.partition().size([2*Math.PI, r])(root);
+
+      var svg = d3.select(container).append('svg').attr('width', w).attr('height', h);
+      var g = svg.append('g').attr('transform','translate('+ (w/2) +','+ (h/2) +')');
+
+      var arc = d3.arc()
+        .startAngle(function(d){ return d.x0; })
+        .endAngle(function(d){ return d.x1; })
+        .innerRadius(function(d){ return d.y0; })
+        .outerRadius(function(d){ return d.y1; });
+
+      var nodes = root.descendants().filter(function(d){ return d.depth; });
+
+      g.selectAll('path')
+        .data(nodes)
+        .enter().append('path')
+        .attr('d', arc)
+        .attr('fill', function(d){ return color(d.data.name); })
+        .attr('stroke', '#0b0f14')
+        .append('title').text(function(d){ return d.data.name+': '+d.value; });
+
+      g.selectAll('text')
+        .data(nodes)
+        .enter().append('text')
+        .attr('transform', function(d){
+          var x = (d.x0 + d.x1)/2 * 180/Math.PI;
+          var y = (d.y0 + d.y1)/2;
+          return 'rotate(' + (x-90) + ') translate(' + y + ',0) rotate(' + (x>180?180:0) + ')';
+        })
+        .attr('dy','0.35em')
+        .attr('text-anchor','middle')
+        .attr('fill','#fff')
+        .style('font-size','12px')
+        .text(function(d){ return d.data.name; });
+    }
+
+    /* ---------------- Bar chart ---------------- */
+    function drawBar(){
+      var container = document.getElementById('bar');
+      container.innerHTML='';
+      if(typeof d3==='undefined'){ container.innerHTML='<div class="card">D3 wurde nicht geladen.</div>'; return; }
+
+      var counts = {};
+      for(var i=0;i<state.controls.length;i++){
+        var c = state.controls[i];
+        if(!matches(c)) continue;
+        var g = (c.path && c.path[0]) || 'Unbekannt';
+        counts[g] = (counts[g]||0) + 1;
+      }
+      var keys = Object.keys(counts).sort();
+      if(!keys.length){ container.innerHTML='<div class="card">Keine Daten für die aktuelle Filterung.</div>'; return; }
+
+      var data = keys.map(function(k){ return { group:k, value:counts[k] }; });
+
+      var margin = {top: 30, right: 20, bottom: 60, left: 60};
+      var w = (container.clientWidth || 900) - margin.left - margin.right;
+      var h = (container.clientHeight || 600) - margin.top - margin.bottom;
+
+      var svg = d3.select(container).append('svg').attr('width', w + margin.left + margin.right).attr('height', h + margin.top + margin.bottom);
+      var g = svg.append('g').attr('transform','translate('+margin.left+','+margin.top+')');
+
+      var x = d3.scaleBand().domain(keys).range([0,w]).padding(0.2);
+      var y = d3.scaleLinear().domain([0, d3.max(data, function(d){ return d.value; })]).nice().range([h,0]);
+
+      var color = d3.scaleOrdinal(d3.schemeTableau10).domain(keys);
+
+      g.append('g').attr('transform','translate(0,'+h+')').call(d3.axisBottom(x))
+        .selectAll('text').attr('transform','rotate(-25)').style('text-anchor','end').attr('fill','#dce8ff');
+      g.append('g').call(d3.axisLeft(y)).selectAll('text').attr('fill','#dce8ff');
+      g.selectAll('.domain, .tick line').attr('stroke','#4a5975');
+
+      g.selectAll('.bar')
+        .data(data)
+        .enter().append('rect')
+        .attr('class','bar')
+        .attr('x', function(d){return x(d.group);})
+        .attr('y', function(d){return y(d.value);})
+        .attr('width', x.bandwidth())
+        .attr('height', function(d){return h - y(d.value);})
+        .attr('fill', function(d){return color(d.group);})
+        .append('title').text(function(d){ return d.group + ': ' + d.value; });
+
+      g.selectAll('.bar-label')
+        .data(data)
+        .enter().append('text')
+        .attr('class','bar-label')
+        .attr('x', function(d){return x(d.group) + x.bandwidth()/2;})
+        .attr('y', function(d){return y(d.value) - 6;} )
+        .attr('text-anchor','middle')
+        .attr('fill','#dce8ff')
+        .style('font-size','12px')
+        .text(function(d){return d.value;});
+    }
+
+    // Sichere DOM-ID aus beliebigen IDs erzeugen
+    function cssId(s){ return String(s).replace(/[^a-z0-9-_]+/gi,'_'); }
+
+    // Initiales Rendering (vor Laden einer Datei leer)
+    renderList();
+
+  
+
+    // --- Reset filters button ---
+    // Filter und Suche auf Standard zuruecksetzen
+    function resetAllFilters(){
+      try{
+        if(els.q) els.q.value = '';
+
+        function checkAll(menuEl, detailsEl, allLabel){
+          if(!menuEl || !detailsEl) return;
+          const itemCbs = Array.from(menuEl.querySelectorAll('input[type="checkbox"]'))
+            .filter(cb => cb.dataset.value !== '__all__');
+          // If no items exist yet (e.g., before a catalog is loaded), just update summary.
+          if(itemCbs.length === 0){
+            msUpdateSummary(detailsEl, allLabel, itemCbs);
+            return;
+          }
+          itemCbs.forEach(cb => { cb.checked = true; });
+
+          const allCb = menuEl.querySelector('input[type="checkbox"][data-value="__all__"]');
+          if(allCb){
+            allCb.checked = true;
+            allCb.indeterminate = false;
+          }
+          msUpdateSummary(detailsEl, allLabel, itemCbs);
+        }
+
+        checkAll(els.groupMenu,  els.group,  'Alle Praktiken');
+        checkAll(els.clsMenu,    els.cls,    'Alle Quellkataloge');
+        checkAll(els.secMenu,    els.sec,    'Alle Sicherheitsniveaus');
+        checkAll(els.targetMenu, els.target, 'Alle Zielobjekte');
+        checkAll(els.tagMenu,    els.tag,    'Alle Tags');
+
+        RefreshViews();
+      }catch(err){
+        showError('Fehler beim Zurücksetzen: ' + (err && err.message ? err.message : String(err)));
+      }
+    }
+
+    function bindResetButton(){
+      var btn = document.getElementById('resetBtn');
+      if(btn && !btn._gsppBound){
+        btn.addEventListener('click', function(ev){
+          ev.preventDefault();
+          resetAllFilters();
+        });
+        btn._gsppBound = true;
+      }
+    }
+    
+    // --- Export to PDF (Print-to-PDF) ---
+    // Druck-Export: Listentab oeffnen, Details aufklappen, Print ausloesen
+    function exportToPdf(){
+      try{
+        if(!state.controls || !state.controls.length){
+          els.msg.className='card err';
+          els.msg.textContent='Bitte zuerst einen OSCAL Catalog laden, bevor du exportierst.';
+          return;
+        }
+
+        var prevTabEl = document.querySelector('.tab.active');
+        var prevTab = prevTabEl ? prevTabEl.getAttribute('data-tab') : 'list';
+
+        // Switch to list tab and ensure list is current
+        switchTab('list');
+        // Initiales Rendering (vor Laden einer Datei leer)
+    renderList();
+
+        // Expand all details in the list (remember which were open)
+        var ds = els.listTab.querySelectorAll('details');
+        var openState = [];
+        for(var i=0;i<ds.length;i++){ openState.push(!!ds[i].open); ds[i].open = true; }
+
+        // Enter print mode (light theme + hide UI)
+        document.body.classList.add('print-mode');
+
+        var cleaned = false;
+        function cleanup(){
+          if(cleaned) return;
+          cleaned = true;
+          document.body.classList.remove('print-mode');
+          // Restore open state
+          var ds2 = els.listTab.querySelectorAll('details');
+          for(var i=0;i<ds2.length && i<openState.length;i++){ ds2[i].open = openState[i]; }
+          // Restore previous tab
+          switchTab(prevTab);
+        }
+
+        window.addEventListener('afterprint', cleanup, { once:true });
+
+        // Trigger print (blocking in most browsers)
+        setTimeout(function(){ window.print(); }, 30);
+
+        // Fallback cleanup (runs after print dialog closes)
+        setTimeout(function(){ cleanup(); }, 500);
+      }catch(e){
+        els.msg.className='card err';
+        els.msg.textContent='Fehler beim PDF-Export: ' + (e && e.message ? e.message : String(e));
+      }
+    }
+
+    function bindExportButton(){
+      var btn = els.exportPdfBtn;
+      if(btn && !btn._gsppBound){
+        btn.addEventListener('click', function(ev){
+          ev.preventDefault();
+          exportToPdf();
+        });
+        btn._gsppBound = true;
+      }
+    }
+    
+bindResetButton();
+
+})();
+  </script>
+</body>
+</html>
