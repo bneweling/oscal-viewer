@@ -287,6 +287,24 @@ mark { background: #fef9c3; color: inherit; border-radius: 2px; padding: 0 1px; 
 .graph-legend { display: flex; gap: 16px; margin-top: 8px; font-size: 11px; }
 .graph-legend-item { display: flex; align-items: center; gap: 6px; }
 
+/* FILTER PANEL */
+.filter-group-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: var(--ci-text-muted); margin-bottom: 8px; }
+.filter-check-list { display: flex; flex-direction: column; gap: 4px; max-height: 180px; overflow-y: auto; }
+.filter-check-item { display: flex; align-items: center; gap: 7px; font-size: 12px; cursor: pointer; padding: 3px 0; }
+.filter-check-item input[type=checkbox] { accent-color: var(--ci-color-brand-blue); width: 13px; height: 13px; flex-shrink: 0; }
+.filter-check-item .fci-count { font-size: 10px; color: var(--ci-text-muted); margin-left: auto; }
+.filter-col { min-width: 140px; }
+
+/* EXPORT CARDS */
+.export-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--spacing-md); margin-bottom: var(--spacing-lg); }
+.export-card { background: var(--ci-bg-card-white); border: 1px solid var(--ci-border); border-radius: var(--ci-radius-card); padding: var(--spacing-lg); cursor: pointer; transition: all 0.15s; box-shadow: var(--ci-shadow); display: flex; flex-direction: column; gap: 8px; }
+.export-card:hover { border-color: var(--ci-color-brand-blue); box-shadow: var(--ci-shadow-lg); transform: translateY(-2px); }
+.export-card-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.export-card-icon svg { width: 20px; height: 20px; }
+.export-card-title { font-weight: 700; font-family: var(--font-display); font-size: 14px; }
+.export-card-desc { font-size: 11px; color: var(--ci-text-muted); line-height: 1.5; }
+.export-card-meta { font-size: 10px; color: var(--ci-text-muted); margin-top: auto; padding-top: 8px; border-top: 1px solid var(--ci-border); }
+
 /* RESPONSIVE */
 @media (max-width: 900px) {
   .sidebar { width: 52px; }
@@ -313,7 +331,7 @@ mark { background: #fef9c3; color: inherit; border-radius: 2px; padding: 0 1px; 
   <!-- SIDEBAR -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/></svg>
+      <svg viewBox="0 0 48 60" width="20" height="25" fill="white" flex-shrink="0"><path d="M0.44 60.09H16.23V37.38H0.44V60.09ZM47.69 0H31.94V60.09H47.69V0ZM16.24 0H0.46V21.75H16.24V0Z"/></svg>
       <h1>OSCAL Viewer</h1>
       <button class="sidebar-toggle" onclick="App.toggleSidebar()" title="Sidebar ein-/ausblenden">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
@@ -397,9 +415,9 @@ mark { background: #fef9c3; color: inherit; border-radius: 2px; padding: 0 1px; 
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
           URL
         </button>
-        <button class="btn btn-secondary btn-sm" onclick="window.print()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-          PDF
+        <button class="btn btn-secondary btn-sm" onclick="App.nav('export')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+          Export
         </button>
       </div>
     </div>
@@ -409,7 +427,22 @@ mark { background: #fef9c3; color: inherit; border-radius: 2px; padding: 0 1px; 
       <span id="stat-filtered" class="stat-pill">0 gefiltert</span>
       <span id="stat-groups" class="stat-pill">0 Gruppen</span>
       <span id="stat-broken" class="stat-pill" style="display:none"></span>
-      <div id="quick-chips" class="filter-chips" style="flex:1;margin-left:8px;"></div>
+      <div id="quick-chips" class="filter-chips" style="flex:1;margin-left:4px;"></div>
+      <button class="btn btn-secondary btn-sm" id="filter-btn" onclick="V.toggleFilterPanel()" style="margin-left:auto;flex-shrink:0;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+        Filter
+        <span id="filter-active-count" style="display:none;background:var(--ci-color-brand-blue);color:#fff;border-radius:10px;padding:0 5px;font-size:9px;margin-left:2px;">0</span>
+      </button>
+    </div>
+
+    <!-- FILTER PANEL -->
+    <div id="filter-panel" style="display:none;border-bottom:1px solid var(--ci-border);background:var(--ci-bg-card-white);padding:var(--spacing-md) var(--spacing-lg);animation:viewFadeIn 0.15s ease-out;">
+      <div id="filter-panel-inner" style="display:flex;gap:var(--spacing-lg);flex-wrap:wrap;align-items:flex-start;"></div>
+      <div style="margin-top:var(--spacing-sm);display:flex;gap:8px;">
+        <button class="btn btn-primary btn-sm" onclick="V.applyFilterPanel()">Anwenden</button>
+        <button class="btn btn-secondary btn-sm" onclick="V.clearFilterPanel()">Zurücksetzen</button>
+        <button class="btn btn-secondary btn-sm" onclick="V.toggleFilterPanel()">Schließen</button>
+      </div>
     </div>
 
     <div class="page-scroll" id="page-scroll">
@@ -554,41 +587,111 @@ mark { background: #fef9c3; color: inherit; border-radius: 2px; padding: 0 1px; 
 
       <!-- EXPORT -->
       <div class="view" id="view-export">
-        <div class="view-header"><h2>Export</h2></div>
-        <div class="stat-grid" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr));">
-          <div class="card" style="padding:var(--spacing-md);cursor:pointer;" onclick="Export.csv(';')">
-            <div style="font-size:24px;margin-bottom:8px;">📊</div>
-            <div style="font-weight:700;font-family:var(--font-display);margin-bottom:4px;">CSV Export</div>
-            <div style="font-size:11px;color:var(--ci-text-muted);">Gefilterte Controls als CSV (Semikolon)</div>
+        <div class="view-header">
+          <h2>Export</h2>
+          <span id="export-context-label" style="font-size:12px;color:var(--ci-text-muted);margin-top:4px;"></span>
+        </div>
+
+        <div class="export-grid">
+
+          <!-- PDF -->
+          <div class="export-card" onclick="Export.printPDF()">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div class="export-card-icon" style="background:rgba(239,68,68,0.1);">
+                <svg viewBox="0 0 24 24" fill="none" stroke="var(--ci-danger)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+              </div>
+              <div>
+                <div class="export-card-title">PDF Report</div>
+              </div>
+            </div>
+            <div class="export-card-desc">Generiert einen vollständig gestalteten PDF-Report mit Header, Tabelle, Badges und Metadaten — basierend auf der aktuellen Filterauswahl.</div>
+            <div class="export-card-meta">Öffnet optimierte Druckansicht in neuem Tab</div>
           </div>
-          <div class="card" style="padding:var(--spacing-md);cursor:pointer;" onclick="Export.profile()">
-            <div style="font-size:24px;margin-bottom:8px;">🎯</div>
-            <div style="font-weight:700;font-family:var(--font-display);margin-bottom:4px;">OSCAL Profile</div>
-            <div style="font-size:11px;color:var(--ci-text-muted);">Minimales Profile JSON mit include-controls</div>
+
+          <!-- CSV -->
+          <div class="export-card" onclick="V.showCsvOptions()">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div class="export-card-icon" style="background:rgba(16,185,129,0.1);">
+                <svg viewBox="0 0 24 24" fill="none" stroke="var(--ci-success)" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
+              </div>
+              <div><div class="export-card-title">CSV / TSV</div></div>
+            </div>
+            <div class="export-card-desc">Tabelle aller gefilterten Controls mit ID, Titel, Gruppe, Sicherheitsniveau, Aufwand, Tags und Link-Statistiken.</div>
+            <div class="export-card-meta">Wählbar: Semikolon, Komma oder Tab</div>
           </div>
-          <div class="card" style="padding:var(--spacing-md);cursor:pointer;" onclick="Export.miniCatalog()">
-            <div style="font-size:24px;margin-bottom:8px;">📦</div>
-            <div style="font-weight:700;font-family:var(--font-display);margin-bottom:4px;">Mini-Katalog</div>
-            <div style="font-size:11px;color:var(--ci-text-muted);">Ausgewählte Controls als eigenständiges Katalog-JSON</div>
+
+          <!-- OSCAL Profile -->
+          <div class="export-card" onclick="Export.profile()">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div class="export-card-icon" style="background:rgba(0,85,255,0.1);">
+                <svg viewBox="0 0 24 24" fill="none" stroke="var(--ci-color-brand-blue)" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+              </div>
+              <div><div class="export-card-title">OSCAL Profile</div></div>
+            </div>
+            <div class="export-card-desc">Minimales OSCAL Profile JSON mit <code style="font-family:var(--font-mono);font-size:10px;">include-controls</code> Direktive für die gefilterten Controls.</div>
+            <div class="export-card-meta">OSCAL 1.1.3 konform · JSON</div>
           </div>
-          <div class="card" style="padding:var(--spacing-md);cursor:pointer;" onclick="Export.markdown()">
-            <div style="font-size:24px;margin-bottom:8px;">📝</div>
-            <div style="font-weight:700;font-family:var(--font-display);margin-bottom:4px;">Markdown Report</div>
-            <div style="font-size:11px;color:var(--ci-text-muted);">Controls mit Properties und Links als Markdown</div>
+
+          <!-- Mini-Katalog -->
+          <div class="export-card" onclick="Export.miniCatalog()">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div class="export-card-icon" style="background:rgba(139,92,246,0.1);">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+              </div>
+              <div><div class="export-card-title">Mini-Katalog</div></div>
+            </div>
+            <div class="export-card-desc">Eigenständiger OSCAL-Katalog nur mit den gefilterten Controls — erhält die Gruppenstruktur.</div>
+            <div class="export-card-meta">OSCAL Catalog JSON · vollständig</div>
           </div>
-          <div class="card" style="padding:var(--spacing-md);cursor:pointer;" onclick="window.print()">
-            <div style="font-size:24px;margin-bottom:8px;">🖨️</div>
-            <div style="font-weight:700;font-family:var(--font-display);margin-bottom:4px;">PDF (Drucken)</div>
-            <div style="font-size:11px;color:var(--ci-text-muted);">Aktuelle Ansicht als PDF drucken</div>
+
+          <!-- Markdown -->
+          <div class="export-card" onclick="Export.markdown()">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div class="export-card-icon" style="background:rgba(245,158,11,0.1);">
+                <svg viewBox="0 0 24 24" fill="none" stroke="var(--ci-warn)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+              </div>
+              <div><div class="export-card-title">Markdown Report</div></div>
+            </div>
+            <div class="export-card-desc">Strukturierter Bericht mit Statement, Guidance, Properties und Links pro Control — für Wikis, Confluence oder Git.</div>
+            <div class="export-card-meta">.md Datei · lesbar für Menschen und Maschinen</div>
+          </div>
+
+          <!-- Workspace / Review -->
+          <div class="export-card" onclick="Export.workspace()">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div class="export-card-icon" style="background:rgba(16,185,129,0.1);">
+                <svg viewBox="0 0 24 24" fill="none" stroke="var(--ci-success)" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+              </div>
+              <div><div class="export-card-title">Review-Status</div></div>
+            </div>
+            <div class="export-card-desc">Alle Controls mit Review-Status, Notizen und Evidenz-Links als Markdown — für Dokumentation und Übergaben.</div>
+            <div class="export-card-meta">Aus lokalem Workspace-Speicher</div>
+          </div>
+
+        </div>
+
+        <!-- CSV Options -->
+        <div id="csv-options-panel" style="display:none;" class="card">
+          <div class="card-header"><strong>CSV / TSV Export</strong></div>
+          <div class="card-body" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+            <div>
+              <div class="field-label">Trennzeichen</div>
+              <div style="display:flex;gap:6px;">
+                <button class="btn btn-primary btn-sm" onclick="Export.csv(';');U.get('csv-options-panel').style.display='none'">; Semikolon</button>
+                <button class="btn btn-secondary btn-sm" onclick="Export.csv(',');U.get('csv-options-panel').style.display='none'">, Komma</button>
+                <button class="btn btn-secondary btn-sm" onclick="Export.csv('\t');U.get('csv-options-panel').style.display='none'">⇥ Tab</button>
+              </div>
+            </div>
+            <div style="border-left:1px solid var(--ci-border);padding-left:12px;">
+              <div class="field-label">Zwischenablage</div>
+              <button class="btn btn-secondary btn-sm" onclick="Export.clipCSV()">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                Kopieren (Tab-getrennt)
+              </button>
+            </div>
           </div>
         </div>
-        <div class="card" style="margin-top:var(--spacing-md);">
-          <div class="card-header"><strong>Workspace exportieren</strong></div>
-          <div class="card-body" style="display:flex;gap:8px;flex-wrap:wrap;">
-            <button class="btn btn-secondary btn-sm" onclick="Export.workspace()">Review-Status exportieren</button>
-            <button class="btn btn-secondary btn-sm" onclick="Export.clipCSV()">In Zwischenablage (CSV)</button>
-          </div>
-        </div>
+
       </div>
 
     </div><!-- /page-scroll -->
@@ -1505,6 +1608,108 @@ var Export = {
     });
     U.download('workspace-export.md', lines.join('\n'), 'text/markdown');
     Toast.show('Workspace exportiert', 'success');
+  },
+
+  printPDF: function() {
+    if (!AS.filtered.length) { Toast.show('Keine Controls gefiltert', 'warn'); return; }
+    var meta = Store.catMeta;
+    var date = new Date().toLocaleDateString('de-DE', {year:'numeric',month:'long',day:'numeric'});
+
+    // Sec level color helper
+    function secColor(s) {
+      if (!s) return '#6b7280';
+      var sl = s.toLowerCase();
+      if (sl.includes('hoch')) return '#ef4444';
+      if (sl.includes('erh')) return '#f59e0b';
+      if (sl.includes('normal')) return '#3b82f6';
+      return '#10b981';
+    }
+    function escH(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    // Collect groups present in filtered controls
+    var groupSet = {};
+    AS.filtered.forEach(function(c){ if(c.groupId) groupSet[c.groupId] = c.groupTitle || c.groupId; });
+
+    var rows = '';
+    AS.filtered.forEach(function(c) {
+      rows += '<tr>';
+      rows += '<td class="id-cell">'+escH(c.id)+'</td>';
+      rows += '<td>'+escH(c.title)+'</td>';
+      rows += '<td style="color:#6b7280;font-size:10px;">'+escH(c.subgroupTitle||c.groupTitle)+'</td>';
+      if (c.secLevel) {
+        rows += '<td><span class="sec-badge" style="background:'+secColor(c.secLevel)+'20;color:'+secColor(c.secLevel)+';border:1px solid '+secColor(c.secLevel)+'40;">'+escH(c.secLevel)+'</span></td>';
+      } else {
+        rows += '<td><span style="color:#d1d5db;">—</span></td>';
+      }
+      rows += '<td style="font-size:10px;color:#6b7280;">'+escH(c.effort||'—')+'</td>';
+      var badges = c.tags.slice(0,3).map(function(t){ return '<span class="tag">'+escH(t)+'</span>'; }).join('');
+      rows += '<td>'+badges+'</td>';
+      rows += '</tr>';
+      // Statement row if present
+      if (c.statement && c.depth === 0) {
+        var stmt = c.statement.length > 300 ? c.statement.substring(0,300)+'…' : c.statement;
+        rows += '<tr class="stmt-row"><td></td><td colspan="5" class="stmt-cell">'+escH(stmt)+'</td></tr>';
+      }
+    });
+
+    var html = '<!doctype html><html lang="de"><head><meta charset="UTF-8">' +
+      '<title>'+escH(meta.title)+' — OSCAL Report</title>' +
+      '<style>' +
+        '@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700;800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap");' +
+        'body{font-family:Inter,system-ui,sans-serif;color:#111;background:#fff;margin:0;padding:0;font-size:11px;}' +
+        '.page-header{background:#001141;color:#fff;padding:24px 32px;display:flex;justify-content:space-between;align-items:flex-end;}' +
+        '.page-header h1{font-family:"DM Sans",sans-serif;font-size:22px;font-weight:800;margin:0 0 4px 0;}' +
+        '.page-header .meta{font-size:10px;opacity:0.7;line-height:1.6;}' +
+        '.page-header .logo{font-family:"IBM Plex Mono",monospace;font-size:11px;background:rgba(255,255,255,0.15);padding:6px 12px;border-radius:6px;white-space:nowrap;}' +
+        '.summary{display:flex;gap:16px;padding:16px 32px;background:#f4f6f9;border-bottom:2px solid #e5e7eb;flex-wrap:wrap;}' +
+        '.sum-item{background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:8px 14px;min-width:100px;}' +
+        '.sum-num{font-family:"IBM Plex Mono",monospace;font-size:20px;font-weight:700;color:#0055ff;line-height:1;}' +
+        '.sum-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:#6b7280;margin-top:2px;}' +
+        '.content{padding:20px 32px;}' +
+        'table{width:100%;border-collapse:collapse;font-size:11px;}' +
+        'thead tr{background:#001141;color:#fff;}' +
+        'th{padding:8px 10px;text-align:left;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;white-space:nowrap;}' +
+        'td{padding:7px 10px;border-bottom:1px solid #f0f0f0;vertical-align:top;}' +
+        'tr:nth-child(even) td{background:#fafafa;}' +
+        '.id-cell{font-family:"IBM Plex Mono",monospace;font-size:10px;font-weight:700;color:#0055ff;white-space:nowrap;}' +
+        '.sec-badge{padding:2px 7px;border-radius:10px;font-size:9px;font-weight:700;white-space:nowrap;}' +
+        '.tag{background:#ede9fe;color:#7c3aed;padding:1px 6px;border-radius:4px;font-size:9px;font-weight:600;margin-right:3px;display:inline-block;}' +
+        '.stmt-row td{background:#f8faff!important;border-bottom:2px solid #e5e7eb;}' +
+        '.stmt-cell{font-size:10px;color:#374151;line-height:1.5;padding:6px 10px 10px;}' +
+        '.group-hdr{background:#f4f6f9;font-family:"DM Sans",sans-serif;font-weight:700;font-size:12px;color:#001141;padding:10px;border-left:4px solid #0055ff;margin:20px 0 8px;}' +
+        '@page{size:A4 landscape;margin:15mm 12mm;}' +
+        '@media print{body{font-size:10px;}}' +
+      '</style></head><body>' +
+      '<div class="page-header">' +
+        '<div>' +
+          '<h1>'+escH(meta.title)+'</h1>' +
+          '<div class="meta">' +
+            (meta.version ? 'Version '+escH(meta.version)+' · ' : '') +
+            (meta.oscalVersion ? 'OSCAL '+escH(meta.oscalVersion)+' · ' : '') +
+            'Exportiert am '+date +
+          '</div>' +
+        '</div>' +
+        '<div class="logo">OSCAL Viewer</div>' +
+      '</div>' +
+      '<div class="summary">' +
+        '<div class="sum-item"><div class="sum-num">'+AS.filtered.length+'</div><div class="sum-lbl">Controls</div></div>' +
+        '<div class="sum-item"><div class="sum-num">'+Object.keys(groupSet).length+'</div><div class="sum-lbl">Gruppen</div></div>' +
+        (AS.query ? '<div class="sum-item" style="min-width:200px;"><div style="font-size:9px;color:#6b7280;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px;">Filter</div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#374151;">'+escH(AS.query)+'</div></div>' : '') +
+      '</div>' +
+      '<div class="content">' +
+        '<table><thead><tr><th>ID</th><th>Titel</th><th>Gruppe</th><th>Sicherheit</th><th>Aufwand</th><th>Tags</th></tr></thead><tbody>' +
+        rows +
+        '</tbody></table>' +
+      '</div>' +
+      '</body></html>';
+
+    var w = window.open('', '_blank');
+    if (!w) { Toast.show('Popup blockiert — bitte erlauben', 'warn'); return; }
+    w.document.write(html);
+    w.document.close();
+    w.focus();
+    setTimeout(function(){ w.print(); }, 500);
+    Toast.show(AS.filtered.length + ' Controls als PDF vorbereitet', 'success');
   }
 };
 
@@ -1711,41 +1916,94 @@ var V = {
   updateQuickChips: function() {
     var container = U.get('quick-chips');
     if (!container) return;
-    // Show top security levels and top groups as chips
     var secCount = {};
-    var groupCount = {};
     Store.controls.forEach(function(c) {
       if (c.secLevel) secCount[c.secLevel] = (secCount[c.secLevel]||0)+1;
-      if (c.groupId) groupCount[c.groupId] = (groupCount[c.groupId]||0)+1;
     });
-    var html = '';
-    // Security level chips
+    var parts = [];
     Object.keys(secCount).sort().forEach(function(s) {
-      var active = AS.query.includes('sec:'+s.toLowerCase()) ? ' active' : '';
-      html += '<span class="filter-chip'+active+'" onclick="V.toggleChip(\'sec:'+U.esc(s.toLowerCase())+'\')">' + U.esc(s) + ' <small style="opacity:0.6">'+secCount[s]+'</small></span>';
+      var token = 'sec:' + s.toLowerCase().replace(/\s+/g,'-');
+      var active = AS.query.includes(token) ? ' active' : '';
+      parts.push('<span class="filter-chip'+active+'" onclick="V.toggleChip(\''+U.esc(token)+'\')">' + U.esc(s) + ' <small style="opacity:0.6">'+secCount[s]+'</small></span>');
     });
-    // Group chips (top 6)
-    var groups = Store.practices.slice(0,6);
-    groups.forEach(function(g) {
-      var active = AS.query.includes('group:'+g.id.toLowerCase()) ? ' active' : '';
-      html += '<span class="filter-chip'+active+'" onclick="V.toggleChip(\'group:'+U.esc(g.id)+'\')">' + U.esc(g.id) + '</span>';
-    });
-    container.innerHTML = html;
+    container.innerHTML = parts.join('');
   },
 
-  toggleChip: function(token) {
-    var q = AS.query;
-    if (q.includes(token)) {
-      AS.query = q.replace(token,'').replace(/\s+/g,' ').trim();
+  toggleFilterPanel: function() {
+    var panel = U.get('filter-panel');
+    if (panel.style.display === 'none') {
+      V.renderFilterPanel();
+      panel.style.display = '';
     } else {
-      AS.query = (q ? q + ' ' : '') + token;
+      panel.style.display = 'none';
     }
+  },
+
+  renderFilterPanel: function() {
+    var inner = U.get('filter-panel-inner');
+    if (!inner || !Store.controls.length) return;
+    var dims = [
+      { key:'group', label:'Gruppe', vals:function(c){ return c.groupId ? [c.groupId] : []; }, token:function(v){ return 'group:'+v; } },
+      { key:'sec',   label:'Sicherheitsniveau', vals:function(c){ return c.secLevel?[c.secLevel]:[]; }, token:function(v){ return 'sec:'+v.toLowerCase().replace(/\s+/g,'-'); } },
+      { key:'effort',label:'Aufwand', vals:function(c){ return c.effort?[c.effort]:[]; }, token:function(v){ return 'eff:'+v.toLowerCase(); } },
+      { key:'modal', label:'Modalverb', vals:function(c){ return c.modal?[c.modal]:[]; }, token:function(v){ return 'modal:'+v.toLowerCase(); } },
+      { key:'class', label:'Klasse', vals:function(c){ return c.class?[c.class]:[]; }, token:function(v){ return 'class:'+v.toLowerCase(); } },
+      { key:'tag',   label:'Tags', vals:function(c){ return c.tags.slice(0,20); }, token:function(v){ return 'tag:'+v.toLowerCase(); } }
+    ];
+    var parts = [];
+    dims.forEach(function(dim) {
+      var counts = {};
+      Store.controls.forEach(function(c) {
+        dim.vals(c).forEach(function(v){ if(v) counts[v]=(counts[v]||0)+1; });
+      });
+      var entries = Object.keys(counts).sort();
+      if (!entries.length) return;
+      var col = '<div class="filter-col"><div class="filter-group-label">'+dim.label+'<\/div><div class="filter-check-list">';
+      entries.slice(0,30).forEach(function(v) {
+        var tok = dim.token(v);
+        var chk = AS.query.includes(tok) ? ' checked' : '';
+        col += '<label class="filter-check-item"><input type="checkbox" data-token="'+U.esc(tok)+'"'+chk+'> '+U.esc(v)+'<span class="fci-count">'+counts[v]+'<\/span><\/label>';
+      });
+      col += '<\/div><\/div>';
+      parts.push(col);
+    });
+    inner.innerHTML = parts.join('');
+  },
+
+  applyFilterPanel: function() {
+    var checkboxes = document.querySelectorAll('#filter-panel-inner input[type=checkbox]');
+    var tokens = [];
+    checkboxes.forEach(function(cb){ if(cb.checked) tokens.push(cb.getAttribute('data-token')); });
+    var freeText = AS.query.split(/\s+/).filter(function(t){ return t && !t.includes(':') && !t.match(/[<>=]/); }).join(' ');
+    AS.query = (freeText ? freeText+' ' : '') + tokens.join(' ');
     var inp = U.get('search-input');
     if (inp) inp.value = AS.query;
     Filter.apply();
     V.renderCurrentView();
     V.updateStats();
+    var badge = U.get('filter-active-count');
+    if (badge) { if(tokens.length){badge.textContent=tokens.length;badge.style.display='';}else badge.style.display='none'; }
+    U.get('filter-panel').style.display = 'none';
   },
+
+  clearFilterPanel: function() {
+    AS.query = '';
+    var inp = U.get('search-input');
+    if (inp) inp.value = '';
+    var badge = U.get('filter-active-count');
+    if (badge) badge.style.display = 'none';
+    Filter.apply();
+    V.renderCurrentView();
+    V.updateStats();
+    U.get('filter-panel').style.display = 'none';
+  },
+
+  showCsvOptions: function() {
+    var p = U.get('csv-options-panel');
+    if (p) p.style.display = p.style.display === 'none' ? '' : 'none';
+  },
+
+  toggleChip: function(token) {
 
   renderCurrentView: function() {
     var view = AS.view;
@@ -1759,6 +2017,14 @@ var V = {
     else if (view === 'sunburst') Chart.drawSunburst();
     else if (view === 'lint') V.lint();
     else if (view === 'diff') V.diff();
+    else if (view === 'export') V.updateExportContext();
+  },
+
+  updateExportContext: function() {
+    var el = U.get('export-context-label');
+    if (!el) return;
+    if (!Store.controls.length) { el.textContent = ''; return; }
+    el.textContent = AS.filtered.length + ' von ' + Store.controls.length + ' Controls werden exportiert' + (AS.query ? ' · Filter aktiv' : '');
   },
 
   scrollToControl: function(id) {
@@ -1796,22 +2062,45 @@ var V = {
     html += '<div class="stat-card c4" onclick="App.nav(\'lint\')"><div class="stat-num">'+brokenCount+'</div><div class="stat-label">Broken Links</div></div>';
     html += '</div>';
 
-    // Security level distribution
+    // Security level distribution — horizontal stacked bar
     if (Object.keys(secDist).length) {
+      var secKeys = Object.keys(secDist).sort();
+      var secTotal = secKeys.reduce(function(s,k){ return s+secDist[k]; }, 0);
+      var secColors = {
+        'hoch': 'var(--ci-danger)',
+        'erhöht': 'var(--ci-warn)',
+        'erhoht': 'var(--ci-warn)',
+        'normal': 'var(--ci-color-brand-blue)',
+        'default': 'var(--ci-success)'
+      };
+      function secColor(s) {
+        var sl = s.toLowerCase();
+        for (var k in secColors) { if (sl.includes(k)) return secColors[k]; }
+        return secColors['default'];
+      }
       html += '<div class="chart-container" style="margin-bottom:var(--spacing-md);">';
       html += '<div class="chart-title">Sicherheitsniveau-Verteilung</div>';
-      html += '<div style="display:flex;gap:12px;align-items:flex-end;height:80px;">';
-      var maxSec = Math.max.apply(null, Object.values(secDist));
-      Object.keys(secDist).sort().forEach(function(s) {
-        var pct = Math.round(secDist[s]/maxSec*100);
-        var cls = s.toLowerCase().includes('hoch') ? 'var(--ci-danger)' : s.toLowerCase().includes('erhöht')||s.toLowerCase().includes('erhoht') ? 'var(--ci-warn)' : 'var(--ci-color-brand-blue)';
-        html += '<div style="display:flex;flex-direction:column;align-items:center;gap:4px;">';
-        html += '<span style="font-size:10px;font-weight:700;color:var(--ci-text-muted);">'+secDist[s]+'</span>';
-        html += '<div style="width:40px;background:'+cls+';height:'+pct+'%;border-radius:4px 4px 0 0;min-height:4px;"></div>';
-        html += '<span style="font-size:9px;color:var(--ci-text-muted);text-align:center;max-width:50px;">'+U.esc(s)+'</span>';
+      // Stacked bar
+      html += '<div style="display:flex;border-radius:8px;overflow:hidden;height:28px;margin-bottom:12px;">';
+      secKeys.forEach(function(s) {
+        var pct = (secDist[s]/secTotal*100).toFixed(1);
+        html += '<div style="background:'+secColor(s)+';width:'+pct+'%;display:flex;align-items:center;justify-content:center;transition:width 0.5s;" title="'+U.esc(s)+': '+secDist[s]+'">';
+        if (parseFloat(pct) > 8) html += '<span style="color:#fff;font-size:10px;font-weight:700;white-space:nowrap;padding:0 6px;">'+secDist[s]+'</span>';
         html += '</div>';
       });
-      html += '</div></div>';
+      html += '</div>';
+      // Legend
+      html += '<div style="display:flex;gap:16px;flex-wrap:wrap;">';
+      secKeys.forEach(function(s) {
+        var pct = (secDist[s]/secTotal*100).toFixed(0);
+        html += '<div style="display:flex;align-items:center;gap:6px;">';
+        html += '<div style="width:10px;height:10px;border-radius:50%;background:'+secColor(s)+';flex-shrink:0;"></div>';
+        html += '<span style="font-size:12px;font-weight:600;">'+U.esc(s)+'</span>';
+        html += '<span style="font-size:11px;color:var(--ci-text-muted);">'+secDist[s]+' ('+pct+'%)</span>';
+        html += '</div>';
+      });
+      html += '</div>';
+      html += '</div>';
     }
 
     // Group distribution
